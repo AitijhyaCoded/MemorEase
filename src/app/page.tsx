@@ -1,8 +1,8 @@
 
 'use client';
 
-import { useState, useTransition, useMemo, useCallback } from 'react';
-import { BrainCircuit, FileText, Sparkles, Bookmark, Text, Palette, Plus, Minus, X, Loader2, ArrowRight } from 'lucide-react';
+import { useState, useTransition, useMemo, useCallback, useEffect } from 'react';
+import { BrainCircuit, FileText, Sparkles, Bookmark, Text, Palette, Plus, Minus, X, Loader2, Image as ImageIcon, Volume2, Lightbulb, Link2, Save } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
@@ -11,9 +11,12 @@ import { Slider } from '@/components/ui/slider';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
-import { generateSummaryAction, suggestHighlightsAction } from './actions';
+import { generateSummaryAction, suggestHighlightsAction, generateVisualsAction, generateAudioAction, suggestMnemonicsAction, createStoryAction } from './actions';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
+import { UserNav } from '@/components/auth/user-nav';
+import Image from 'next/image';
+import { useAuth } from '@/hooks/use-auth';
 
 type HighlighterProps = {
   text: string;
@@ -70,27 +73,41 @@ const Highlighter = ({ text, highlights, bookmarks, fontSize, onBookmarkToggle }
 
 
 export default function Home() {
+  const { user } = useAuth();
   const [content, setContent] = useState('');
   const [processedContent, setProcessedContent] = useState('');
   const [summary, setSummary] = useState('');
   const [highlights, setHighlights] = useState<string[]>([]);
   const [bookmarks, setBookmarks] = useState<number[]>([]);
   const [fontSize, setFontSize] = useState(16);
+  const [visualUrl, setVisualUrl] = useState('');
+  const [audioUrl, setAudioUrl] = useState('');
+  const [mnemonics, setMnemonics] = useState<string[]>([]);
+  const [story, setStory] = useState('');
 
   const [isSummaryLoading, startSummaryTransition] = useTransition();
   const [isHighlightsLoading, startHighlightsTransition] = useTransition();
-  const { toast } = useToast();
+  const [isVisualsLoading, startVisualsTransition] = useTransition();
+  const [isAudioLoading, startAudioTransition] = useTransition();
+  const [isMnemonicsLoading, startMnemonicsTransition] = useTransition();
+  const [isStoryLoading, startStoryTransition] = useTransition();
 
-  const handleContentSubmit = () => {
-    if (content.length < 50) {
-      toast({
-        variant: 'destructive',
-        title: 'Content too short',
-        description: 'Please enter at least 50 characters to process.',
-      });
-      return;
+  const { toast } = useToast();
+  
+  useEffect(() => {
+    const savedContent = localStorage.getItem('memorEaseContent');
+    if (savedContent) {
+      setContent(savedContent);
+      setProcessedContent(savedContent);
     }
-    setProcessedContent(content);
+  }, []);
+
+  const handleSaveContent = () => {
+    localStorage.setItem('memorEaseContent', processedContent);
+    toast({
+      title: 'Content Saved',
+      description: 'Your text has been saved locally.',
+    });
   };
 
   const handleReset = () => {
@@ -99,6 +116,11 @@ export default function Home() {
     setSummary('');
     setHighlights([]);
     setBookmarks([]);
+    setVisualUrl('');
+    setAudioUrl('');
+    setMnemonics([]);
+    setStory('');
+    localStorage.removeItem('memorEaseContent');
   };
 
   const handleSummarize = () => {
@@ -122,6 +144,50 @@ export default function Home() {
       }
     });
   };
+  
+  const handleGenerateVisuals = () => {
+    startVisualsTransition(async () => {
+      const result = await generateVisualsAction(processedContent);
+      if (result.error) {
+        toast({ variant: 'destructive', title: 'Visual Generation Error', description: result.error });
+      } else {
+        setVisualUrl(result.imageUrl || '');
+      }
+    });
+  };
+  
+  const handleGenerateAudio = () => {
+    startAudioTransition(async () => {
+      const result = await generateAudioAction(summary || processedContent);
+       if (result.error) {
+        toast({ variant: 'destructive', title: 'Audio Generation Error', description: result.error });
+      } else {
+        setAudioUrl(result.audioUrl || '');
+      }
+    });
+  };
+
+  const handleSuggestMnemonics = () => {
+    startMnemonicsTransition(async () => {
+      const result = await suggestMnemonicsAction(processedContent);
+       if (result.error) {
+        toast({ variant: 'destructive', title: 'Mnemonic Suggestion Error', description: result.error });
+      } else {
+        setMnemonics(result.mnemonics || []);
+      }
+    });
+  };
+  
+  const handleCreateStory = () => {
+    startStoryTransition(async () => {
+        const result = await createStoryAction(processedContent);
+        if (result.error) {
+            toast({ variant: 'destructive', title: 'Story Creation Error', description: result.error });
+        } else {
+            setStory(result.story || '');
+        }
+    });
+  };
 
   const toggleBookmark = (index: number) => {
     setBookmarks(prev =>
@@ -134,30 +200,37 @@ export default function Home() {
     return bookmarks.map(index => paragraphs[index]).filter(Boolean);
   }, [bookmarks, processedContent]);
 
+  if (!user) return null;
+  
   if (!processedContent) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-background p-4">
-        <header className="flex items-center gap-4 mb-8">
-          <BrainCircuit className="h-12 w-12 text-primary" />
-          <h1 className="text-4xl font-bold tracking-tighter">MemorEase</h1>
+        <header className="absolute top-4 right-4">
+            <UserNav />
         </header>
-        <Card className="w-full max-w-3xl shadow-2xl animate-in fade-in-50 zoom-in-95 duration-500">
-          <CardHeader>
-            <CardTitle className="text-2xl">Start Memorizing</CardTitle>
-            <CardDescription>Paste your text below to begin.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Textarea
-              value={content}
-              onChange={e => setContent(e.target.value)}
-              placeholder="Paste text or a URL's content here... The more text, the better the AI assistance."
-              className="min-h-[300px] text-base"
-            />
-            <Button onClick={handleContentSubmit} className="mt-4 w-full" size="lg">
-              Process Content <ArrowRight className="ml-2 h-5 w-5" />
-            </Button>
-          </CardContent>
-        </Card>
+        <div className='flex flex-col items-center justify-center'>
+            <div className="flex items-center gap-4 mb-8">
+              <BrainCircuit className="h-12 w-12 text-primary" />
+              <h1 className="text-4xl font-bold tracking-tighter">MemorEase</h1>
+            </div>
+            <Card className="w-full max-w-3xl shadow-2xl animate-in fade-in-50 zoom-in-95 duration-500">
+              <CardHeader>
+                <CardTitle className="text-2xl">Start Memorizing</CardTitle>
+                <CardDescription>Paste your text below to begin.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Textarea
+                  value={content}
+                  onChange={e => setContent(e.target.value)}
+                  placeholder="Paste text or a URL's content here... The more text, the better the AI assistance."
+                  className="min-h-[300px] text-base"
+                />
+                <Button onClick={() => setProcessedContent(content)} className="mt-4 w-full" size="lg" disabled={content.length < 50}>
+                  Process Content
+                </Button>
+              </CardContent>
+            </Card>
+        </div>
       </div>
     );
   }
@@ -169,9 +242,15 @@ export default function Home() {
           <BrainCircuit className="h-8 w-8 text-primary" />
           <h1 className="text-2xl font-bold tracking-tight">MemorEase</h1>
         </div>
-        <Button onClick={handleReset} variant="outline">
-          <X className="mr-2 h-4 w-4" /> Clear Content
-        </Button>
+        <div className='flex items-center gap-2'>
+            <Button onClick={handleSaveContent} variant="outline">
+                <Save className="mr-2 h-4 w-4" /> Save
+            </Button>
+            <Button onClick={handleReset} variant="outline">
+              <X className="mr-2 h-4 w-4" /> Clear Content
+            </Button>
+            <UserNav />
+        </div>
       </header>
       <div className="grid md:grid-cols-3 flex-1 overflow-hidden">
         <main className="md:col-span-2 flex flex-col p-4 md:p-6 overflow-hidden">
@@ -216,7 +295,7 @@ export default function Home() {
               <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="summary"><FileText className="mr-2 h-4 w-4" />Summary</TabsTrigger>
                 <TabsTrigger value="highlights"><Sparkles className="mr-2 h-4 w-4" />Highlights</TabsTrigger>
-                <TabsTrigger value="bookmarks"><Bookmark className="mr-2 h-4 w-4" />Bookmarks</TabsTrigger>
+                <TabsTrigger value="more"><Plus className="mr-2 h-4 w-4" />More</TabsTrigger>
               </TabsList>
               <TabsContent value="summary" className="flex-1 flex flex-col overflow-hidden">
                 <Button onClick={handleSummarize} disabled={isSummaryLoading || !!summary} className="w-full mt-2">
@@ -243,20 +322,63 @@ export default function Home() {
                   ) : !isHighlightsLoading && <p className="text-sm text-center text-muted-foreground mt-8">Click "Suggest Highlights" to find key phrases.</p>}
                 </ScrollArea>
               </TabsContent>
-              <TabsContent value="bookmarks" className="flex-1 flex flex-col overflow-hidden">
-                <ScrollArea className="mt-4 flex-1 pr-2">
-                  {bookmarkedParagraphs.length > 0 ? (
-                    <div className="space-y-4">
-                      {bookmarkedParagraphs.map((p, i) => (
-                        <div key={i} className="text-sm border-l-2 border-primary pl-3 italic text-muted-foreground">
-                          {p.length > 100 ? `${p.substring(0, 100)}...` : p}
+               <TabsContent value="more" className="flex-1 flex flex-col overflow-hidden">
+                 <Tabs defaultValue="visuals" className="flex-1 flex flex-col overflow-hidden">
+                    <TabsList className="grid w-full grid-cols-2">
+                      <TabsTrigger value="visuals"><ImageIcon className="mr-2 h-4 w-4" />Visuals</TabsTrigger>
+                      <TabsTrigger value="audio"><Volume2 className="mr-2 h-4 w-4" />Audio</TabsTrigger>
+                    </TabsList>
+                     <TabsContent value="visuals" className="flex-1 flex flex-col overflow-hidden">
+                        <Button onClick={handleGenerateVisuals} disabled={isVisualsLoading || !!visualUrl} className="w-full mt-2">
+                            {isVisualsLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            {visualUrl ? 'Visual Generated' : 'Generate Visual'}
+                        </Button>
+                         <ScrollArea className="mt-4 flex-1 pr-2">
+                            {isVisualsLoading && <Skeleton className="h-48 w-full" />}
+                            {visualUrl && <Image src={visualUrl} alt="Visual association" width={512} height={512} className="rounded-lg" />}
+                            {!visualUrl && !isVisualsLoading && <p className="text-sm text-center text-muted-foreground mt-8">Generate an image to help you remember.</p>}
+                        </ScrollArea>
+                    </TabsContent>
+                    <TabsContent value="audio" className="flex-1 flex flex-col overflow-hidden">
+                        <Button onClick={handleGenerateAudio} disabled={isAudioLoading || !!audioUrl} className="w-full mt-2">
+                            {isAudioLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            {audioUrl ? 'Audio Generated' : 'Generate Audio'}
+                        </Button>
+                        <div className="mt-4">
+                            {isAudioLoading && <Skeleton className="h-12 w-full" />}
+                            {audioUrl && <audio controls src={audioUrl} className="w-full" />}
+                             {!audioUrl && !isAudioLoading && <p className="text-sm text-center text-muted-foreground mt-8">Generate audio of the summary (or text if no summary).</p>}
                         </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-sm text-center text-muted-foreground mt-8">Hover over text paragraphs and click the bookmark icon to save them here.</p>
-                  )}
-                </ScrollArea>
+                    </TabsContent>
+                 </Tabs>
+                <Tabs defaultValue="mnemonics" className="flex-1 flex flex-col overflow-hidden mt-4">
+                    <TabsList className="grid w-full grid-cols-2">
+                       <TabsTrigger value="mnemonics"><Lightbulb className="mr-2 h-4 w-4" />Mnemonics</TabsTrigger>
+                       <TabsTrigger value="story"><Link2 className="mr-2 h-4 w-4" />Story</TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="mnemonics" className="flex-1 flex flex-col overflow-hidden">
+                         <Button onClick={handleSuggestMnemonics} disabled={isMnemonicsLoading || mnemonics.length > 0} className="w-full mt-2">
+                            {isMnemonicsLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            {mnemonics.length > 0 ? 'Mnemonics Suggested' : 'Suggest Mnemonics'}
+                        </Button>
+                         <ScrollArea className="mt-4 flex-1 pr-2">
+                            {isMnemonicsLoading && <div className="space-y-2"><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-full" /></div>}
+                            {mnemonics.length > 0 && <ul className="list-disc list-inside space-y-2">{mnemonics.map((m, i) => <li key={i}>{m}</li>)}</ul>}
+                            {!mnemonics.length && !isMnemonicsLoading && <p className="text-sm text-center text-muted-foreground mt-8">Generate mnemonic devices.</p>}
+                        </ScrollArea>
+                    </TabsContent>
+                    <TabsContent value="story" className="flex-1 flex flex-col overflow-hidden">
+                        <Button onClick={handleCreateStory} disabled={isStoryLoading || !!story} className="w-full mt-2">
+                            {isStoryLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            {story ? 'Story Created' : 'Create Story'}
+                        </Button>
+                        <ScrollArea className="mt-4 flex-1 pr-2">
+                            {isStoryLoading && <div className="space-y-2"><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-5/6" /></div>}
+                            {story && <p className="text-sm leading-relaxed">{story}</p>}
+                            {!story && !isStoryLoading && <p className="text-sm text-center text-muted-foreground mt-8">Create a story to link concepts.</p>}
+                        </ScrollArea>
+                    </TabsContent>
+                </Tabs>
               </TabsContent>
             </Tabs>
           </CardContent>
