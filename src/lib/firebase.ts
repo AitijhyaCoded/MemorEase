@@ -5,12 +5,12 @@ import { initializeApp, getApps } from "firebase/app";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_AUTH_DOMAIN",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_STORAGE_BUCKET",
-  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-  appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyCB-gVU9AfICMwlQy5OEBisePXryRQmdZg",
+  authDomain: "memorease-mqw2g.firebaseapp.com",
+  projectId: "memorease-mqw2g",
+  storageBucket: "memorease-mqw2g.appspot.com",
+  messagingSenderId: "704409412703",
+  appId: "1:704409412703:web:fbcfcdc1318a58f3f8a7ea"
 };
 
 // Initialize Firebase
