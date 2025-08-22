@@ -17,15 +17,20 @@ export default function Flashcard({ front, back }: FlashcardProps) {
             <CardTitle>Flashcard</CardTitle>
             <CardContent className="mt-4">
                 <div
-                    className="w-full h-48 border rounded-lg flex items-center justify-center text-center p-4 cursor-pointer"
+                    className="w-full h-48 rounded-lg flex items-center justify-center text-center p-4 cursor-pointer"
                     onClick={() => setIsFlipped(!isFlipped)}
                     style={{ perspective: '1000px' }}
                 >
-                    <div className={cn("transition-transform duration-500 w-full h-full flex items-center justify-center", isFlipped && '[transform:rotateY(180deg)]')}>
-                        <div className="[backface-visibility:hidden]">
+                    <div className={cn(
+                        "relative w-full h-full transition-transform duration-700 [transform-style:preserve-3d]",
+                        isFlipped && "[transform:rotateY(180deg)]"
+                        )}>
+                        {/* Front of the card */}
+                        <div className="absolute w-full h-full flex items-center justify-center [backface-visibility:hidden]">
                             <p className="text-xl font-semibold">{front}</p>
                         </div>
-                        <div className="absolute [transform:rotateY(180deg)] [backface-visibility:hidden]">
+                        {/* Back of the card */}
+                        <div className="absolute w-full h-full flex items-center justify-center [backface-visibility:hidden] [transform:rotateY(180deg)]">
                             <p>{back}</p>
                         </div>
                     </div>
