@@ -11,14 +11,16 @@ import { z } from 'zod';
 import { getAuth } from 'firebase/auth';
 import { app } from '@/lib/firebase';
 import { getMemory, saveMemory, getMemoryHistory } from '@/lib/firestore';
-import { headers } from 'next/headers';
+import { cookies } from 'next/headers';
 import { getApp } from 'firebase/app';
 import { revalidatePath } from 'next/cache';
 
 const contentSchema = z.string().min(50, 'Please provide at least 50 characters of text.');
 
 async function getUserId() {
-    const idToken = headers().get('Authorization')?.split('Bearer ')[1];
+    const cookieStore = cookies();
+    const idToken = cookieStore.get('firebaseIdToken')?.value;
+
     if (!idToken) return null;
     
     // In a real app, you would use firebase-admin to verify the token.
