@@ -13,23 +13,37 @@ import {
     Timestamp, 
     where,
     DocumentReference,
-    DocumentData
+    DocumentData,
+    updateDoc
 } from 'firebase/firestore';
 import { auth } from './firebase';
 
 const MEMORIES_COLLECTION = 'memories';
+
+export interface AiGeneratedContent {
+    mnemonics: string[];
+    story: string;
+    visualUrl: string;
+}
 
 export interface Memory {
     id: string;
     userId: string;
     title: string;
     content: string;
+    summary: string;
+    highlights: string[];
+    aiGenerated: AiGeneratedContent;
     createdAt: Timestamp;
+    updatedAt: Timestamp;
 }
 
 export interface NewMemory {
     title: string;
     content: string;
+    summary: string;
+    highlights: string[];
+    aiGenerated: AiGeneratedContent;
 }
 
 // Save (create or update) a memory
@@ -37,19 +51,22 @@ export async function saveMemory(memoryData: NewMemory, memoryId?: string): Prom
     const user = auth.currentUser;
     if (!user) throw new Error('User not logged in');
 
-    const dataToSave = {
-        userId: user.uid,
-        title: memoryData.title,
-        content: memoryData.content,
-        createdAt: serverTimestamp(),
-    };
-    
     if (memoryId) {
         // Update existing document
         const memoryRef = doc(db, MEMORIES_COLLECTION, memoryId);
-        return setDoc(memoryRef, dataToSave, { merge: true });
+        const dataToUpdate = {
+            ...memoryData,
+            updatedAt: serverTimestamp(),
+        };
+        return updateDoc(memoryRef, dataToUpdate);
     } else {
         // Create new document
+         const dataToSave = {
+            userId: user.uid,
+            ...memoryData,
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp(),
+        };
         return addDoc(collection(db, MEMORIES_COLLECTION), dataToSave);
     }
 }
@@ -79,7 +96,7 @@ export async function getMemoryHistory(): Promise<Memory[]> {
     const q = query(
         collection(db, MEMORIES_COLLECTION),
         where('userId', '==', user.uid),
-        orderBy('createdAt', 'desc')
+        orderBy('updatedAt', 'desc')
     );
 
     const querySnapshot = await getDocs(q);

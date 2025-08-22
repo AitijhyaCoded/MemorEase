@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useTransition, useMemo, useCallback, useEffect } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { BrainCircuit, FileText, Sparkles, Bookmark, Text, Palette, Plus, Minus, X, Loader2, Image as ImageIcon, Volume2, Lightbulb, Link2, Save } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -18,7 +18,7 @@ import { Badge } from '@/components/ui/badge';
 import { UserNav } from '@/components/auth/user-nav';
 import Image from 'next/image';
 import { useAuth } from '@/hooks/use-auth';
-import { saveMemory, getMemory } from '@/lib/firestore';
+import { saveMemory, getMemory, AiGeneratedContent } from '@/lib/firestore';
 import {
   Dialog,
   DialogContent,
@@ -85,6 +85,7 @@ const Highlighter = ({ text, highlights, bookmarks, fontSize, onBookmarkToggle }
 
 
 export default function Home() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const memoryId = searchParams.get('id');
   const { user } = useAuth();
@@ -122,13 +123,23 @@ export default function Home() {
           if (memory) {
             setContent(memory.content);
             setProcessedContent(memory.content);
+            setSaveTitle(memory.title);
+            setSummary(memory.summary || '');
+            setHighlights(memory.highlights || []);
+            if (memory.aiGenerated) {
+                setMnemonics(memory.aiGenerated.mnemonics || []);
+                setStory(memory.aiGenerated.story || '');
+                setVisualUrl(memory.aiGenerated.visualUrl || '');
+            }
             toast({ title: 'Memory Loaded', description: `Loaded "${memory.title}".` });
           } else {
              toast({ variant: 'destructive', title: 'Error', description: "Could not find the requested memory." });
+             router.replace('/');
           }
         } catch (error) {
            toast({ variant: 'destructive', title: 'Error', description: "Failed to load memory." });
            console.error(error);
+           router.replace('/');
         } finally {
           setIsLoadingMemory(false);
         }
@@ -137,10 +148,11 @@ export default function Home() {
       }
     };
     loadMemory();
-  }, [memoryId, user, toast]);
+  }, [memoryId, user, toast, router]);
 
 
   const handleReset = () => {
+    router.replace('/');
     setContent('');
     setProcessedContent('');
     setSummary('');
@@ -150,8 +162,18 @@ export default function Home() {
     setAudioUrl('');
     setMnemonics([]);
     setStory('');
+    setSaveTitle('');
     toast({ title: 'New Session Started', description: 'Your previous work has been cleared.' });
   };
+  
+  const handleOpenSaveDialog = () => {
+    if (!processedContent) {
+         toast({ variant: 'destructive', title: 'Nothing to save', description: 'Please process some content first.' });
+        return;
+    }
+    setIsSaveDialogOpen(true);
+  }
+
 
   const handleSave = async () => {
     if (!user) {
@@ -165,13 +187,24 @@ export default function Home() {
 
     setIsSaving(true);
     try {
-        await saveMemory({
+        const aiGenerated: AiGeneratedContent = {
+            mnemonics,
+            story,
+            visualUrl
+        };
+
+        const memoryData = {
             title: saveTitle,
             content: processedContent,
-        });
+            summary,
+            highlights,
+            aiGenerated
+        };
+
+        await saveMemory(memoryData, memoryId || undefined);
+        
         toast({ title: 'Memory Saved!', description: `"${saveTitle}" has been saved.`});
         setIsSaveDialogOpen(false);
-        setSaveTitle('');
     } catch (error) {
         console.error("Save error:", error);
         toast({ variant: 'destructive', title: 'Save Error', description: 'Could not save memory. Please try again.' });
@@ -273,7 +306,7 @@ export default function Home() {
         </header>
         <div className='flex flex-col items-center justify-center'>
             <div className="flex items-center gap-4 mb-8">
-              <BrainCircuit className="h-12 w-12 text-primary" />
+              <img src="/logo.svg" alt="MemorEase Logo" className="h-12 w-12" />
               <h1 className="text-4xl font-bold tracking-tighter">MemorEase</h1>
             </div>
             <Card className="w-full max-w-3xl shadow-2xl animate-in fade-in-50 zoom-in-95 duration-500">
@@ -310,7 +343,7 @@ export default function Home() {
       <Dialog open={isSaveDialogOpen} onOpenChange={setIsSaveDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Save Memory</DialogTitle>
+            <DialogTitle>{memoryId ? 'Update Memory' : 'Save Memory'}</DialogTitle>
             <DialogDescription>
               Give your memory a title so you can find it later.
             </DialogDescription>
@@ -332,7 +365,7 @@ export default function Home() {
             <Button variant="outline" onClick={() => setIsSaveDialogOpen(false)}>Cancel</Button>
             <Button onClick={handleSave} disabled={isSaving}>
               {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Save
+              {memoryId ? 'Update' : 'Save'}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -342,11 +375,11 @@ export default function Home() {
       <div className="flex flex-col h-screen">
         <header className="flex items-center justify-between p-4 border-b shrink-0">
           <div className="flex items-center gap-3">
-            <BrainCircuit className="h-8 w-8 text-primary" />
+            <img src="/logo.svg" alt="MemorEase Logo" className="h-8 w-8" />
             <h1 className="text-2xl font-bold tracking-tight">MemorEase</h1>
           </div>
           <div className='flex items-center gap-2'>
-              <Button onClick={() => setIsSaveDialogOpen(true)} variant="outline" disabled={!user}>
+              <Button onClick={handleOpenSaveDialog} variant="outline" disabled={!user}>
                 <Save className="mr-2 h-4 w-4" /> Save
               </Button>
               <Button onClick={handleReset} variant="outline">
