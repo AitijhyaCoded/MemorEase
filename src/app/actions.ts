@@ -11,6 +11,7 @@ import { z } from 'zod';
 import { getMemory, saveMemory, getMemoryHistory } from '@/lib/firestore';
 import { cookies } from 'next/headers';
 import { revalidatePath } from 'next/cache';
+import { adminAuth } from '@/lib/firebase-admin';
 
 const contentSchema = z.string().min(50, 'Please provide at least 50 characters of text.');
 
@@ -18,13 +19,16 @@ async function getUserId() {
     const cookieStore = cookies();
     const idToken = cookieStore.get('firebaseIdToken')?.value;
 
-    if (!idToken) return null;
+    if (!idToken) {
+        console.log("No ID token found in cookies.");
+        return null;
+    };
     
     try {
-        const decodedToken = JSON.parse(Buffer.from(idToken.split('.')[1], 'base64').toString());
-        return decodedToken.sub;
+        const decodedToken = await adminAuth.verifyIdToken(idToken);
+        return decodedToken.uid;
     } catch (e) {
-        console.error("Token decoding error", e);
+        console.error("Token verification error", e);
         return null;
     }
 }
