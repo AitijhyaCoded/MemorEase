@@ -286,6 +286,7 @@ export default function Home() {
           </Card>
         </main>
         <aside className="md:col-span-1 p-4 md:p-6 border-l flex flex-col overflow-hidden">
+        <ScrollArea className="h-full">
           <Card className="w-full flex-1 flex flex-col">
           <CardHeader>
              <CardTitle className="flex items-center gap-3"><Palette className="h-6 w-6 text-primary" />AI Toolkit</CardTitle>
@@ -322,67 +323,73 @@ export default function Home() {
                   ) : !isHighlightsLoading && <p className="text-sm text-center text-muted-foreground mt-8">Click "Suggest Highlights" to find key phrases.</p>}
                 </ScrollArea>
               </TabsContent>
-               <TabsContent value="more" className="flex-1 flex flex-col overflow-hidden">
-                 <Tabs defaultValue="visuals" className="flex-1 flex flex-col overflow-hidden">
-                    <TabsList className="grid w-full grid-cols-2">
-                      <TabsTrigger value="visuals"><ImageIcon className="mr-2 h-4 w-4" />Visuals</TabsTrigger>
-                      <TabsTrigger value="audio"><Volume2 className="mr-2 h-4 w-4" />Audio</TabsTrigger>
-                    </TabsList>
-                     <TabsContent value="visuals" className="flex-1 flex flex-col overflow-hidden">
-                        <Button onClick={handleGenerateVisuals} disabled={isVisualsLoading || !!visualUrl} className="w-full mt-2">
-                            {isVisualsLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                            {visualUrl ? 'Visual Generated' : 'Generate Visual'}
-                        </Button>
-                         <ScrollArea className="mt-4 flex-1 pr-2">
-                            {isVisualsLoading && <Skeleton className="h-48 w-full" />}
-                            {visualUrl && <Image src={visualUrl} alt="Visual association" width={512} height={512} className="rounded-lg" />}
-                            {!visualUrl && !isVisualsLoading && <p className="text-sm text-center text-muted-foreground mt-8">Generate an image to help you remember.</p>}
-                        </ScrollArea>
-                    </TabsContent>
-                    <TabsContent value="audio" className="flex-1 flex flex-col overflow-hidden">
-                        <Button onClick={handleGenerateAudio} disabled={isAudioLoading || !!audioUrl} className="w-full mt-2">
-                            {isAudioLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                            {audioUrl ? 'Audio Generated' : 'Generate Audio'}
-                        </Button>
-                        <div className="mt-4">
-                            {isAudioLoading && <Skeleton className="h-12 w-full" />}
-                            {audioUrl && <audio controls src={audioUrl} className="w-full" />}
-                             {!audioUrl && !isAudioLoading && <p className="text-sm text-center text-muted-foreground mt-8">Generate audio of the summary (or text if no summary).</p>}
-                        </div>
-                    </TabsContent>
-                 </Tabs>
-                <Tabs defaultValue="mnemonics" className="flex-1 flex flex-col overflow-hidden mt-4">
-                    <TabsList className="grid w-full grid-cols-2">
-                       <TabsTrigger value="mnemonics"><Lightbulb className="mr-2 h-4 w-4" />Mnemonics</TabsTrigger>
-                       <TabsTrigger value="story"><Link2 className="mr-2 h-4 w-4" />Story</TabsTrigger>
-                    </TabsList>
-                    <TabsContent value="mnemonics" className="flex-1 flex flex-col overflow-hidden">
-                         <Button onClick={handleSuggestMnemonics} disabled={isMnemonicsLoading || mnemonics.length > 0} className="w-full mt-2">
-                            {isMnemonicsLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                            {mnemonics.length > 0 ? 'Mnemonics Suggested' : 'Suggest Mnemonics'}
-                        </Button>
-                         <ScrollArea className="mt-4 flex-1 pr-2">
-                            {isMnemonicsLoading && <div className="space-y-2"><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-full" /></div>}
-                            {mnemonics.length > 0 && <ul className="list-disc list-inside space-y-2">{mnemonics.map((m, i) => <li key={i}>{m}</li>)}</ul>}
-                            {!mnemonics.length && !isMnemonicsLoading && <p className="text-sm text-center text-muted-foreground mt-8">Generate mnemonic devices.</p>}
-                        </ScrollArea>
-                    </TabsContent>
-                    <TabsContent value="story" className="flex-1 flex flex-col overflow-hidden">
-                        <Button onClick={handleCreateStory} disabled={isStoryLoading || !!story} className="w-full mt-2">
-                            {isStoryLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                            {story ? 'Story Created' : 'Create Story'}
-                        </Button>
-                        <ScrollArea className="mt-4 flex-1 pr-2">
-                            {isStoryLoading && <div className="space-y-2"><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-5/6" /></div>}
-                            {story && <p className="text-sm leading-relaxed">{story}</p>}
-                            {!story && !isStoryLoading && <p className="text-sm text-center text-muted-foreground mt-8">Create a story to link concepts.</p>}
-                        </ScrollArea>
-                    </TabsContent>
+              <TabsContent value="more" className="flex-1 flex flex-col overflow-hidden">
+                <Tabs defaultValue="visuals" className="flex-1 flex flex-col overflow-hidden">
+                  <TabsList className="grid w-full grid-cols-4">
+                    <TabsTrigger value="visuals"><ImageIcon className="mr-2 h-4 w-4" />Visuals</TabsTrigger>
+                    <TabsTrigger value="audio"><Volume2 className="mr-2 h-4 w-4" />Audio</TabsTrigger>
+                    <TabsTrigger value="mnemonics"><Lightbulb className="mr-2 h-4 w-4" />Mnemonics</TabsTrigger>
+                    <TabsTrigger value="story"><Link2 className="mr-2 h-4 w-4" />Story</TabsTrigger>
+                  </TabsList>
+
+                  {/* Visuals */}
+                  <TabsContent value="visuals" className="flex-1 flex flex-col overflow-hidden">
+                    <Button onClick={handleGenerateVisuals} disabled={isVisualsLoading || !!visualUrl} className="w-full mt-2">
+                      {isVisualsLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                      {visualUrl ? 'Visual Generated' : 'Generate Visual'}
+                    </Button>
+                    <ScrollArea className="mt-4 flex-1 pr-2">
+                      {isVisualsLoading && <Skeleton className="h-48 w-full" />}
+                      {visualUrl && <Image src={visualUrl} alt="Visual association" width={512} height={512} className="rounded-lg" />}
+                      {!visualUrl && !isVisualsLoading && <p className="text-sm text-center text-muted-foreground mt-8">Generate an image to help you remember.</p>}
+                    </ScrollArea>
+                  </TabsContent>
+
+                  {/* Audio */}
+                  <TabsContent value="audio" className="flex-1 flex flex-col overflow-hidden">
+                    <Button onClick={handleGenerateAudio} disabled={isAudioLoading || !!audioUrl} className="w-full mt-2">
+                      {isAudioLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                      {audioUrl ? 'Audio Generated' : 'Generate Audio'}
+                    </Button>
+                    <div className="mt-4">
+                      {isAudioLoading && <Skeleton className="h-12 w-full" />}
+                      {audioUrl && <audio controls src={audioUrl} className="w-full" />}
+                      {!audioUrl && !isAudioLoading && <p className="text-sm text-center text-muted-foreground mt-8">Generate audio of the summary (or text if no summary).</p>}
+                    </div>
+                  </TabsContent>
+
+                  {/* Mnemonics */}
+                  <TabsContent value="mnemonics" className="flex-1 flex flex-col overflow-hidden">
+                    <Button onClick={handleSuggestMnemonics} disabled={isMnemonicsLoading || mnemonics.length > 0} className="w-full mt-2">
+                      {isMnemonicsLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                      {mnemonics.length > 0 ? 'Mnemonics Suggested' : 'Suggest Mnemonics'}
+                    </Button>
+                    <ScrollArea className="mt-4 flex-1 pr-2">
+                      {isMnemonicsLoading && <div className="space-y-2"><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-full" /></div>}
+                      {mnemonics.length > 0 && <ul className="list-disc list-inside space-y-2">{mnemonics.map((m, i) => <li key={i}>{m}</li>)}</ul>}
+                      {!mnemonics.length && !isMnemonicsLoading && <p className="text-sm text-center text-muted-foreground mt-8">Generate mnemonic devices.</p>}
+                    </ScrollArea>
+                  </TabsContent>
+
+                  {/* Story */}
+                  <TabsContent value="story" className="flex-1 flex flex-col overflow-hidden">
+                    <Button onClick={handleCreateStory} disabled={isStoryLoading || !!story} className="w-full mt-2">
+                      {isStoryLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                      {story ? 'Story Created' : 'Create Story'}
+                    </Button>
+                    <ScrollArea className="mt-4 flex-1 pr-2">
+                      {isStoryLoading && <div className="space-y-2"><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-5/6" /></div>}
+                      {story && <p className="text-sm leading-relaxed">{story}</p>}
+                      {!story && !isStoryLoading && <p className="text-sm text-center text-muted-foreground mt-8">Create a story to link concepts.</p>}
+                    </ScrollArea>
+                  </TabsContent>
                 </Tabs>
               </TabsContent>
+
             </Tabs>
           </CardContent>
           </Card>
+          </ScrollArea>
         </aside>
       </div>
     </div>
