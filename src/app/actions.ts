@@ -24,7 +24,7 @@ async function getUserId() {
     // For this prototype, we'll decode it to get the UID, which is insecure but sufficient.
     try {
         const decodedToken = JSON.parse(Buffer.from(idToken.split('.')[1], 'base64').toString());
-        return decodedToken.user_id;
+        return decodedToken.sub;
     } catch (e) {
         console.error("Token decoding error", e);
         return null;
