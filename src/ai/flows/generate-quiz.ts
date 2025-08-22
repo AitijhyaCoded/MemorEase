@@ -20,7 +20,7 @@ const MCQSchema = z.object({
 
 const FlashcardSchema = z.object({
   front: z.string().describe('The term or question for the front of the flashcard.'),
-  back: z.string().describe('The definition or answer for the back of the flashcard.'),
+  back: z.string().describe('A concise but complete definition or explanation for the term on the front.'),
 });
 
 const FillInTheBlankSchema = z.object({
