@@ -11,7 +11,7 @@ import { Slider } from '@/components/ui/slider';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
-import { generateSummaryAction, suggestHighlightsAction, generateVisualsAction, generateAudioAction, suggestMnemonicsAction, createStoryAction } from './actions';
+import { generateSummaryAction, suggestHighlightsAction, generateVisualsAction, generateAudioAction, suggestMnemonicsAction, createStoryAction, getUserDataAction, saveUserDataAction } from './actions';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { UserNav } from '@/components/auth/user-nav';
@@ -91,22 +91,54 @@ export default function Home() {
   const [isAudioLoading, startAudioTransition] = useTransition();
   const [isMnemonicsLoading, startMnemonicsTransition] = useTransition();
   const [isStoryLoading, startStoryTransition] = useTransition();
+  const [isDataLoading, startDataLoadingTransition] = useTransition();
 
   const { toast } = useToast();
   
   useEffect(() => {
-    const savedContent = localStorage.getItem('memorEaseContent');
-    if (savedContent) {
-      setContent(savedContent);
-      setProcessedContent(savedContent);
+    if (user) {
+      startDataLoadingTransition(async () => {
+        const data = await getUserDataAction();
+        if (data) {
+          setContent(data.content || '');
+          setProcessedContent(data.processedContent || data.content || '');
+          setSummary(data.summary || '');
+          setHighlights(data.highlights || []);
+          setBookmarks(data.bookmarks || []);
+          setVisualUrl(data.visualUrl || '');
+          setAudioUrl(data.audioUrl || '');
+          setMnemonics(data.mnemonics || []);
+          setStory(data.story || '');
+        }
+      });
+    } else {
+      const savedContent = localStorage.getItem('memorEaseContent');
+      if (savedContent) {
+        setContent(savedContent);
+        setProcessedContent(savedContent);
+      }
     }
-  }, []);
+  }, [user]);
 
-  const handleSaveContent = () => {
-    localStorage.setItem('memorEaseContent', processedContent);
+  const handleSaveContent = async () => {
+    if (user) {
+      await saveUserDataAction({
+        content,
+        processedContent,
+        summary,
+        highlights,
+        bookmarks,
+        visualUrl,
+        audioUrl,
+        mnemonics,
+        story,
+      });
+    } else {
+       localStorage.setItem('memorEaseContent', processedContent);
+    }
     toast({
       title: 'Content Saved',
-      description: 'Your text has been saved locally.',
+      description: 'Your text has been saved.',
     });
   };
 
@@ -120,7 +152,21 @@ export default function Home() {
     setAudioUrl('');
     setMnemonics([]);
     setStory('');
-    localStorage.removeItem('memorEaseContent');
+    if (user) {
+      saveUserDataAction({
+        content: '',
+        processedContent: '',
+        summary: '',
+        highlights: [],
+        bookmarks: [],
+        visualUrl: '',
+        audioUrl: '',
+        mnemonics: [],
+        story: '',
+      });
+    } else {
+      localStorage.removeItem('memorEaseContent');
+    }
   };
 
   const handleSummarize = () => {
@@ -200,7 +246,14 @@ export default function Home() {
     return bookmarks.map(index => paragraphs[index]).filter(Boolean);
   }, [bookmarks, processedContent]);
 
-  if (!user) return null;
+  if (!user && !isDataLoading) return null;
+  if (isDataLoading) {
+      return (
+        <div className="flex items-center justify-center h-screen">
+          <div className="w-16 h-16 border-4 border-dashed rounded-full animate-spin border-primary"></div>
+        </div>
+      );
+  }
   
   if (!processedContent) {
     return (
