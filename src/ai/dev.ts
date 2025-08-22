@@ -8,3 +8,4 @@ import '@/ai/flows/generate-audio.ts';
 import '@/ai/flows/suggest-mnemonics.ts';
 import '@/ai/flows/create-story.ts';
 import '@/ai/flows/create-cheatsheet.ts';
+import '@/ai/flows/generate-quiz.ts';

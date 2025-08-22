@@ -8,6 +8,7 @@ import { generateAudio } from '@/ai/flows/generate-audio';
 import { suggestMnemonics } from '@/ai/flows/suggest-mnemonics';
 import { createStory } from '@/ai/flows/create-story';
 import { createCheatSheet } from '@/ai/flows/create-cheatsheet';
+import { generateQuiz, GenerateQuizOutput } from '@/ai/flows/generate-quiz';
 import { saveCheatSheet } from '@/lib/firestore';
 import { z } from 'zod';
 
@@ -128,5 +129,20 @@ export async function saveCheatSheetToMemoryAction(memoryId: string, cheatSheetH
     } catch (error: any) {
         console.error("Failed to save cheat sheet:", error);
         return { error: error.message || 'An unknown error occurred while saving the cheat sheet.' };
+    }
+}
+
+export async function generateQuizAction(content: string): Promise<{ quiz?: GenerateQuizOutput; error?: string }> {
+    const validation = contentSchema.safeParse(content);
+    if (!validation.success) {
+        return { error: validation.error.flatten().formErrors[0] };
+    }
+
+    try {
+        const result = await generateQuiz({ content });
+        return { quiz: result };
+    } catch (e) {
+        console.error(e);
+        return { error: 'Failed to generate quiz. Please try again later.' };
     }
 }

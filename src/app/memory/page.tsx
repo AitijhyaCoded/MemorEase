@@ -2,7 +2,7 @@
 'use client'
 
 import { useState, useEffect } from 'react';
-import { BrainCircuit, Clock, Loader2, FileText, Sparkles, Lightbulb, Link2, BookCopy } from 'lucide-react';
+import { BrainCircuit, Clock, Loader2, FileText, Sparkles, Lightbulb, Link2, BookCopy, TestTubeDiagonal } from 'lucide-react';
 import {
   Card,
   CardContent,
@@ -24,11 +24,29 @@ import { useAuth } from '@/hooks/use-auth';
 import { formatDistanceToNow } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 import Image from 'next/image';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { generateQuizAction } from '../actions';
+import { GenerateQuizOutput } from '@/ai/flows/generate-quiz';
+import QuizView from '@/components/quiz/quiz-view';
+import { useToast } from '@/hooks/use-toast';
+
 
 export default function MemoryPage() {
   const { user } = useAuth();
   const [history, setHistory] = useState<Memory[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isQuizDialogOpen, setIsQuizDialogOpen] = useState(false);
+  const [currentQuiz, setCurrentQuiz] = useState<GenerateQuizOutput | null>(null);
+  const [isQuizLoading, setIsQuizLoading] = useState(false);
+  const [quizTitle, setQuizTitle] = useState('');
+  const { toast } = useToast();
 
   useEffect(() => {
     const fetchHistory = async () => {
@@ -42,7 +60,59 @@ export default function MemoryPage() {
     fetchHistory();
   }, [user]);
 
+  const handleTakeQuiz = async (memory: Memory) => {
+    setQuizTitle(memory.title);
+    setIsQuizDialogOpen(true);
+    setIsQuizLoading(true);
+
+    // Use the cheat sheet if available, otherwise use the summary, otherwise the full content
+    const contentForQuiz = memory.cheatSheetHtml || memory.summary || memory.content;
+    const result = await generateQuizAction(contentForQuiz);
+
+    if (result.error) {
+      toast({
+        variant: 'destructive',
+        title: 'Quiz Generation Failed',
+        description: result.error,
+      });
+      setIsQuizDialogOpen(false);
+    } else {
+      setCurrentQuiz(result.quiz || null);
+    }
+    setIsQuizLoading(false);
+  }
+
   return (
+    <>
+      <Dialog open={isQuizDialogOpen} onOpenChange={setIsQuizDialogOpen}>
+        <DialogContent className="max-w-4xl h-[90vh]">
+          <DialogHeader>
+            <DialogTitle>Quiz: {quizTitle}</DialogTitle>
+            <DialogDescription>
+              Test your knowledge on this memory session.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="h-full overflow-y-auto pr-6 -mr-6">
+            {isQuizLoading ? (
+              <div className="flex justify-center items-center h-full">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                <p className="ml-4">Generating your quiz...</p>
+              </div>
+            ) : currentQuiz ? (
+              <QuizView quiz={currentQuiz} />
+            ) : (
+               <div className="flex justify-center items-center h-full">
+                 <p>Could not load the quiz. Please try again.</p>
+               </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsQuizDialogOpen(false)}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+
     <div className="flex flex-col items-center min-h-screen bg-background p-4">
         <header className="w-full flex items-center justify-between p-4 border-b shrink-0 fixed top-0 left-0 bg-background/80 backdrop-blur-sm z-10">
             <Link href="/" className="flex items-center gap-3">
@@ -136,9 +206,15 @@ export default function MemoryPage() {
                                 )}
                                 </>
                             )}
-                            <Link href={`/?id=${item.id}`} passHref>
-                                <Button className='mt-4'>Open in Editor</Button>
-                            </Link>
+                            <div className="flex gap-2 mt-4">
+                                <Link href={`/?id=${item.id}`} passHref>
+                                    <Button>Open in Editor</Button>
+                                </Link>
+                                 <Button variant="outline" onClick={() => handleTakeQuiz(item)}>
+                                     <TestTubeDiagonal className="mr-2 h-4 w-4" />
+                                     Take Quiz
+                                </Button>
+                            </div>
                            </div>
                         </AccordionContent>
                     </AccordionItem>
@@ -156,5 +232,6 @@ export default function MemoryPage() {
         </Card>
       </main>
     </div>
+    </>
   );
 }
