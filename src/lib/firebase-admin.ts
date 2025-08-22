@@ -1,12 +1,22 @@
 'use server'
-
 import admin from 'firebase-admin';
+import { config } from 'dotenv';
+
+config({ path: '.env.local' });
 
 if (!admin.apps.length) {
-    const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY_JSON!);
-    admin.initializeApp({
-        credential: admin.credential.cert(serviceAccount)
-    });
+    const serviceAccountJson = process.env.FIREBASE_SERVICE_ACCOUNT_KEY_JSON;
+    if (!serviceAccountJson) {
+        throw new Error('FIREBASE_SERVICE_ACCOUNT_KEY_JSON environment variable is not set. Please add it to your .env.local file.');
+    }
+    try {
+        const serviceAccount = JSON.parse(serviceAccountJson);
+        admin.initializeApp({
+            credential: admin.credential.cert(serviceAccount)
+        });
+    } catch (error: any) {
+        throw new Error(`Failed to parse FIREBASE_SERVICE_ACCOUNT_KEY_JSON: ${error.message}`);
+    }
 }
 
 export const adminAuth = admin.auth();
