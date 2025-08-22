@@ -1,8 +1,5 @@
 'use server'
 import admin from 'firebase-admin';
-import { config } from 'dotenv';
-
-config({ path: '.env.local' });
 
 if (!admin.apps.length) {
     const serviceAccountJson = process.env.FIREBASE_SERVICE_ACCOUNT_KEY_JSON;
