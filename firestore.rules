@@ -1,11 +1,10 @@
-
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Users can only read and write their own data, which is stored
-    // in a collection named after their user ID.
-    match /users/{userId}/{documents=**} {
-      allow read, write: if request.auth.uid == userId;
+    // Memories can only be accessed by their owner.
+    match /memories/{memoryId} {
+      allow read, update, delete: if request.auth != null && request.auth.uid == resource.data.userId;
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
     }
   }
 }

@@ -10,21 +10,16 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { getMemoryHistory } from '@/lib/firestore';
+import { getMemoryHistory, Memory } from '@/lib/firestore';
 import { UserNav } from '@/components/auth/user-nav';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/use-auth';
-
-interface MemoryItem {
-    id: string;
-    title: string;
-    updatedAt: string;
-}
+import { formatDistanceToNow } from 'date-fns';
 
 export default function MemoryPage() {
   const { user } = useAuth();
-  const [history, setHistory] = useState<MemoryItem[]>([]);
+  const [history, setHistory] = useState<Memory[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -71,7 +66,8 @@ export default function MemoryPage() {
                         <div>
                             <h3 className="font-semibold text-lg">{item.title}</h3>
                             <p className="text-sm text-muted-foreground flex items-center gap-2 mt-1">
-                                <Clock className="h-4 w-4" /> Last saved: {item.updatedAt}
+                                <Clock className="h-4 w-4" /> 
+                                Last saved: {item.createdAt ? formatDistanceToNow(new Date(item.createdAt.seconds * 1000), { addSuffix: true }) : 'a while ago'}
                             </p>
                         </div>
                         <Link href={`/?id=${item.id}`} passHref>

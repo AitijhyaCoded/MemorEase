@@ -1,8 +1,9 @@
 
 'use client';
 
-import { useState, useTransition, useMemo, useCallback } from 'react';
-import { BrainCircuit, FileText, Sparkles, Bookmark, Text, Palette, Plus, Minus, X, Loader2, Image as ImageIcon, Volume2, Lightbulb, Link2 } from 'lucide-react';
+import { useState, useTransition, useMemo, useCallback, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
+import { BrainCircuit, FileText, Sparkles, Bookmark, Text, Palette, Plus, Minus, X, Loader2, Image as ImageIcon, Volume2, Lightbulb, Link2, Save } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
@@ -16,6 +17,18 @@ import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { UserNav } from '@/components/auth/user-nav';
 import Image from 'next/image';
+import { useAuth } from '@/hooks/use-auth';
+import { saveMemory, getMemory } from '@/lib/firestore';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 type HighlighterProps = {
   text: string;
@@ -72,6 +85,11 @@ const Highlighter = ({ text, highlights, bookmarks, fontSize, onBookmarkToggle }
 
 
 export default function Home() {
+  const searchParams = useSearchParams();
+  const memoryId = searchParams.get('id');
+  const { user } = useAuth();
+  const { toast } = useToast();
+
   const [content, setContent] = useState('');
   const [processedContent, setProcessedContent] = useState('');
   const [summary, setSummary] = useState('');
@@ -83,14 +101,44 @@ export default function Home() {
   const [mnemonics, setMnemonics] = useState<string[]>([]);
   const [story, setStory] = useState('');
 
+  const [isLoadingMemory, setIsLoadingMemory] = useState(!!memoryId);
   const [isSummaryLoading, startSummaryTransition] = useTransition();
   const [isHighlightsLoading, startHighlightsTransition] = useTransition();
   const [isVisualsLoading, startVisualsTransition] = useTransition();
   const [isAudioLoading, startAudioTransition] = useTransition();
   const [isMnemonicsLoading, startMnemonicsTransition] = useTransition();
   const [isStoryLoading, startStoryTransition] = useTransition();
+  
+  const [isSaveDialogOpen, setIsSaveDialogOpen] = useState(false);
+  const [saveTitle, setSaveTitle] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
 
-  const { toast } = useToast();
+  useEffect(() => {
+    const loadMemory = async () => {
+      if (memoryId && user) {
+        setIsLoadingMemory(true);
+        try {
+          const memory = await getMemory(memoryId);
+          if (memory) {
+            setContent(memory.content);
+            setProcessedContent(memory.content);
+            toast({ title: 'Memory Loaded', description: `Loaded "${memory.title}".` });
+          } else {
+             toast({ variant: 'destructive', title: 'Error', description: "Could not find the requested memory." });
+          }
+        } catch (error) {
+           toast({ variant: 'destructive', title: 'Error', description: "Failed to load memory." });
+           console.error(error);
+        } finally {
+          setIsLoadingMemory(false);
+        }
+      } else {
+        setIsLoadingMemory(false);
+      }
+    };
+    loadMemory();
+  }, [memoryId, user, toast]);
+
 
   const handleReset = () => {
     setContent('');
@@ -103,6 +151,33 @@ export default function Home() {
     setMnemonics([]);
     setStory('');
     toast({ title: 'New Session Started', description: 'Your previous work has been cleared.' });
+  };
+
+  const handleSave = async () => {
+    if (!user) {
+        toast({ variant: 'destructive', title: 'Not Logged In', description: 'You must be logged in to save a memory.' });
+        return;
+    }
+    if (!saveTitle.trim()) {
+        toast({ variant: 'destructive', title: 'Title Required', description: 'Please enter a title for your memory.' });
+        return;
+    }
+
+    setIsSaving(true);
+    try {
+        await saveMemory({
+            title: saveTitle,
+            content: processedContent,
+        });
+        toast({ title: 'Memory Saved!', description: `"${saveTitle}" has been saved.`});
+        setIsSaveDialogOpen(false);
+        setSaveTitle('');
+    } catch (error) {
+        console.error("Save error:", error);
+        toast({ variant: 'destructive', title: 'Save Error', description: 'Could not save memory. Please try again.' });
+    } finally {
+        setIsSaving(false);
+    }
   };
 
 
@@ -207,13 +282,20 @@ export default function Home() {
                 <CardDescription>Paste your text below to begin.</CardDescription>
               </CardHeader>
               <CardContent>
-                <Textarea
-                  value={content}
-                  onChange={e => setContent(e.target.value)}
-                  placeholder="Paste text or a URL's content here... The more text, the better the AI assistance."
-                  className="min-h-[300px] text-base"
-                />
-                <Button onClick={handleProcessContent} className="mt-4 w-full" size="lg" disabled={content.length < 50}>
+                {isLoadingMemory ? (
+                   <div className="flex justify-center items-center h-[300px]">
+                        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    </div>
+                ) : (
+                  <Textarea
+                    value={content}
+                    onChange={e => setContent(e.target.value)}
+                    placeholder="Paste text or a URL's content here... The more text, the better the AI assistance."
+                    className="min-h-[300px] text-base"
+                  />
+                )}
+                <Button onClick={handleProcessContent} className="mt-4 w-full" size="lg" disabled={content.length < 50 || isLoadingMemory}>
+                  {isLoadingMemory && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   Process Content
                 </Button>
               </CardContent>
@@ -224,161 +306,198 @@ export default function Home() {
   }
 
   return (
-    <div className="flex flex-col h-screen">
-      <header className="flex items-center justify-between p-4 border-b shrink-0">
-        <div className="flex items-center gap-3">
-          <BrainCircuit className="h-8 w-8 text-primary" />
-          <h1 className="text-2xl font-bold tracking-tight">MemorEase</h1>
-        </div>
-        <div className='flex items-center gap-2'>
-            <Button onClick={handleReset} variant="outline">
-              <Plus className="mr-2 h-4 w-4" /> New Session
+    <>
+      <Dialog open={isSaveDialogOpen} onOpenChange={setIsSaveDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Save Memory</DialogTitle>
+            <DialogDescription>
+              Give your memory a title so you can find it later.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="title" className="text-right">
+                Title
+              </Label>
+              <Input
+                id="title"
+                value={saveTitle}
+                onChange={(e) => setSaveTitle(e.target.value)}
+                className="col-span-3"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsSaveDialogOpen(false)}>Cancel</Button>
+            <Button onClick={handleSave} disabled={isSaving}>
+              {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Save
             </Button>
-            <UserNav />
-        </div>
-      </header>
-      <div className="grid md:grid-cols-3 flex-1 overflow-hidden">
-        <main className="md:col-span-2 flex flex-col p-4 md:p-6 overflow-hidden min-h-0">
-          <Card className="flex-1 flex flex-col min-h-0">
-            <CardHeader className="flex flex-row items-center justify-between">
-              <div className="flex items-center gap-3">
-                <Text className="h-6 w-6 text-primary" />
-                <CardTitle>Your Content</CardTitle>
-              </div>
-              <div className="flex items-center gap-4 w-1/3">
-                 <Minus className="h-4 w-4" />
-                <Slider
-                  value={[fontSize]}
-                  onValueChange={value => setFontSize(value[0])}
-                  min={12}
-                  max={24}
-                  step={1}
-                />
-                 <Plus className="h-4 w-4" />
-              </div>
-            </CardHeader>
-            <CardContent className="flex-1 p-0 overflow-hidden min-h-0">
-              <ScrollArea className="h-full pr-4">
-                <div className="pr-2 pl-8">
-                  <Highlighter
-                    text={processedContent}
-                    highlights={highlights}
-                    bookmarks={bookmarks}
-                    fontSize={fontSize}
-                    onBookmarkToggle={toggleBookmark}
-                  />
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+
+      <div className="flex flex-col h-screen">
+        <header className="flex items-center justify-between p-4 border-b shrink-0">
+          <div className="flex items-center gap-3">
+            <BrainCircuit className="h-8 w-8 text-primary" />
+            <h1 className="text-2xl font-bold tracking-tight">MemorEase</h1>
+          </div>
+          <div className='flex items-center gap-2'>
+              <Button onClick={() => setIsSaveDialogOpen(true)} variant="outline" disabled={!user}>
+                <Save className="mr-2 h-4 w-4" /> Save
+              </Button>
+              <Button onClick={handleReset} variant="outline">
+                <Plus className="mr-2 h-4 w-4" /> New Session
+              </Button>
+              <UserNav />
+          </div>
+        </header>
+        <div className="grid md:grid-cols-3 flex-1 overflow-hidden">
+          <main className="md:col-span-2 flex flex-col p-4 md:p-6 overflow-hidden min-h-0">
+            <Card className="flex-1 flex flex-col min-h-0">
+              <CardHeader className="flex flex-row items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <Text className="h-6 w-6 text-primary" />
+                  <CardTitle>Your Content</CardTitle>
                 </div>
-              </ScrollArea>
+                <div className="flex items-center gap-4 w-1/3">
+                   <Minus className="h-4 w-4" />
+                  <Slider
+                    value={[fontSize]}
+                    onValueChange={value => setFontSize(value[0])}
+                    min={12}
+                    max={24}
+                    step={1}
+                  />
+                   <Plus className="h-4 w-4" />
+                </div>
+              </CardHeader>
+              <CardContent className="flex-1 p-0 overflow-hidden min-h-0">
+                <ScrollArea className="h-full pr-4">
+                  <div className="pr-2 pl-8">
+                    <Highlighter
+                      text={processedContent}
+                      highlights={highlights}
+                      bookmarks={bookmarks}
+                      fontSize={fontSize}
+                      onBookmarkToggle={toggleBookmark}
+                    />
+                  </div>
+                </ScrollArea>
+              </CardContent>
+            </Card>
+          </main>
+          <aside className="md:col-span-1 p-4 md:p-6 border-l flex flex-col overflow-hidden">
+          <ScrollArea className="h-full">
+            <Card className="w-full flex-1 flex flex-col">
+            <CardHeader>
+               <CardTitle className="flex items-center gap-3"><Palette className="h-6 w-6 text-primary" />AI Toolkit</CardTitle>
+            </CardHeader>
+            <CardContent className="flex-1 flex flex-col overflow-hidden">
+              <Tabs defaultValue="summary" className="flex-1 flex flex-col overflow-hidden">
+                <TabsList className="grid w-full grid-cols-3">
+                  <TabsTrigger value="summary"><FileText className="mr-2 h-4 w-4" />Summary</TabsTrigger>
+                  <TabsTrigger value="highlights"><Sparkles className="mr-2 h-4 w-4" />Highlights</TabsTrigger>
+                  <TabsTrigger value="more"><Plus className="mr-2 h-4 w-4" />More</TabsTrigger>
+                </TabsList>
+                <TabsContent value="summary" className="flex-1 flex flex-col overflow-hidden">
+                  <Button onClick={handleSummarize} disabled={isSummaryLoading || !!summary} className="w-full mt-2">
+                    {isSummaryLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    {summary ? 'Summary Generated' : 'Generate Summary'}
+                  </Button>
+                  <ScrollArea className="mt-4 flex-1 pr-2">
+                    {isSummaryLoading && <div className="space-y-2"><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-5/6" /></div>}
+                    {summary && <p className="text-sm leading-relaxed">{summary}</p>}
+                    {!summary && !isSummaryLoading && <p className="text-sm text-center text-muted-foreground mt-8">Click "Generate Summary" to create a concise version of your text.</p>}
+                  </ScrollArea>
+                </TabsContent>
+                <TabsContent value="highlights" className="flex-1 flex flex-col overflow-hidden">
+                  <Button onClick={handleHighlight} disabled={isHighlightsLoading || highlights.length > 0} className="w-full mt-2">
+                    {isHighlightsLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                     {highlights.length > 0 ? 'Highlights Suggested' : 'Suggest Highlights'}
+                  </Button>
+                  <ScrollArea className="mt-4 flex-1 pr-2">
+                    {isHighlightsLoading && <div className="space-y-2"><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-5/6" /></div>}
+                    {highlights.length > 0 ? (
+                      <div className="flex flex-wrap gap-2">
+                        {highlights.map((h, i) => <Badge key={i} variant="secondary" className="text-sm">{h}</Badge>)}
+                      </div>
+                    ) : !isHighlightsLoading && <p className="text-sm text-center text-muted-foreground mt-8">Click "Suggest Highlights" to find key phrases.</p>}
+                  </ScrollArea>
+                </TabsContent>
+                <TabsContent value="more" className="flex-1 flex flex-col overflow-hidden">
+                  <Tabs defaultValue="visuals" className="flex-1 flex flex-col overflow-hidden">
+                    <TabsList className="grid w-full grid-cols-4">
+                      <TabsTrigger value="visuals"><ImageIcon className="mr-2 h-4 w-4" />Visuals</TabsTrigger>
+                      <TabsTrigger value="audio"><Volume2 className="mr-2 h-4 w-4" />Audio</TabsTrigger>
+                      <TabsTrigger value="mnemonics"><Lightbulb className="mr-2 h-4 w-4" />Mnemonics</TabsTrigger>
+                      <TabsTrigger value="story"><Link2 className="mr-2 h-4 w-4" />Story</TabsTrigger>
+                    </TabsList>
+
+                    {/* Visuals */}
+                    <TabsContent value="visuals" className="flex-1 flex flex-col overflow-hidden">
+                      <Button onClick={handleGenerateVisuals} disabled={isVisualsLoading || !!visualUrl} className="w-full mt-2">
+                        {isVisualsLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        {visualUrl ? 'Visual Generated' : 'Generate Visual'}
+                      </Button>
+                      <ScrollArea className="mt-4 flex-1 pr-2">
+                        {isVisualsLoading && <Skeleton className="h-48 w-full" />}
+                        {visualUrl && <Image src={visualUrl} alt="Visual association" width={512} height={512} className="rounded-lg" />}
+                        {!visualUrl && !isVisualsLoading && <p className="text-sm text-center text-muted-foreground mt-8">Generate an image to help you remember.</p>}
+                      </ScrollArea>
+                    </TabsContent>
+
+                    {/* Audio */}
+                    <TabsContent value="audio" className="flex-1 flex flex-col overflow-hidden">
+                      <Button onClick={handleGenerateAudio} disabled={isAudioLoading || !!audioUrl} className="w-full mt-2">
+                        {isAudioLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        {audioUrl ? 'Audio Generated' : 'Generate Audio'}
+                      </Button>
+                      <div className="mt-4">
+                        {isAudioLoading && <Skeleton className="h-12 w-full" />}
+                        {audioUrl && <audio controls src={audioUrl} className="w-full" />}
+                        {!audioUrl && !isAudioLoading && <p className="text-sm text-center text-muted-foreground mt-8">Generate audio of the summary (or text if no summary).</p>}
+                      </div>
+                    </TabsContent>
+
+                    {/* Mnemonics */}
+                    <TabsContent value="mnemonics" className="flex-1 flex flex-col overflow-hidden">
+                      <Button onClick={handleSuggestMnemonics} disabled={isMnemonicsLoading || mnemonics.length > 0} className="w-full mt-2">
+                        {isMnemonicsLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        {mnemonics.length > 0 ? 'Mnemonics Suggested' : 'Suggest Mnemonics'}
+                      </Button>
+                      <ScrollArea className="mt-4 flex-1 pr-2">
+                        {isMnemonicsLoading && <div className="space-y-2"><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-full" /></div>}
+                        {mnemonics.length > 0 && <ul className="list-disc list-inside space-y-2">{mnemonics.map((m, i) => <li key={i}>{m}</li>)}</ul>}
+                        {!mnemonics.length && !isMnemonicsLoading && <p className="text-sm text-center text-muted-foreground mt-8">Generate mnemonic devices.</p>}
+                      </ScrollArea>
+                    </TabsContent>
+
+                    {/* Story */}
+                    <TabsContent value="story" className="flex-1 flex flex-col overflow-hidden">
+                      <Button onClick={handleCreateStory} disabled={isStoryLoading || !!story} className="w-full mt-2">
+                        {isStoryLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        {story ? 'Story Created' : 'Create Story'}
+                      </Button>
+                      <ScrollArea className="mt-4 flex-1 pr-2">
+                        {isStoryLoading && <div className="space-y-2"><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-5/6" /></div>}
+                        {story && <p className="text-sm leading-relaxed">{story}</p>}
+                        {!story && !isStoryLoading && <p className="text-sm text-center text-muted-foreground mt-8">Create a story to link concepts.</p>}
+                      </ScrollArea>
+                    </TabsContent>
+                  </Tabs>
+                </TabsContent>
+
+              </Tabs>
             </CardContent>
-          </Card>
-        </main>
-        <aside className="md:col-span-1 p-4 md:p-6 border-l flex flex-col overflow-hidden">
-        <ScrollArea className="h-full">
-          <Card className="w-full flex-1 flex flex-col">
-          <CardHeader>
-             <CardTitle className="flex items-center gap-3"><Palette className="h-6 w-6 text-primary" />AI Toolkit</CardTitle>
-          </CardHeader>
-          <CardContent className="flex-1 flex flex-col overflow-hidden">
-            <Tabs defaultValue="summary" className="flex-1 flex flex-col overflow-hidden">
-              <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value="summary"><FileText className="mr-2 h-4 w-4" />Summary</TabsTrigger>
-                <TabsTrigger value="highlights"><Sparkles className="mr-2 h-4 w-4" />Highlights</TabsTrigger>
-                <TabsTrigger value="more"><Plus className="mr-2 h-4 w-4" />More</TabsTrigger>
-              </TabsList>
-              <TabsContent value="summary" className="flex-1 flex flex-col overflow-hidden">
-                <Button onClick={handleSummarize} disabled={isSummaryLoading || !!summary} className="w-full mt-2">
-                  {isSummaryLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  {summary ? 'Summary Generated' : 'Generate Summary'}
-                </Button>
-                <ScrollArea className="mt-4 flex-1 pr-2">
-                  {isSummaryLoading && <div className="space-y-2"><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-5/6" /></div>}
-                  {summary && <p className="text-sm leading-relaxed">{summary}</p>}
-                  {!summary && !isSummaryLoading && <p className="text-sm text-center text-muted-foreground mt-8">Click "Generate Summary" to create a concise version of your text.</p>}
-                </ScrollArea>
-              </TabsContent>
-              <TabsContent value="highlights" className="flex-1 flex flex-col overflow-hidden">
-                <Button onClick={handleHighlight} disabled={isHighlightsLoading || highlights.length > 0} className="w-full mt-2">
-                  {isHighlightsLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                   {highlights.length > 0 ? 'Highlights Suggested' : 'Suggest Highlights'}
-                </Button>
-                <ScrollArea className="mt-4 flex-1 pr-2">
-                  {isHighlightsLoading && <div className="space-y-2"><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-5/6" /></div>}
-                  {highlights.length > 0 ? (
-                    <div className="flex flex-wrap gap-2">
-                      {highlights.map((h, i) => <Badge key={i} variant="secondary" className="text-sm">{h}</Badge>)}
-                    </div>
-                  ) : !isHighlightsLoading && <p className="text-sm text-center text-muted-foreground mt-8">Click "Suggest Highlights" to find key phrases.</p>}
-                </ScrollArea>
-              </TabsContent>
-              <TabsContent value="more" className="flex-1 flex flex-col overflow-hidden">
-                <Tabs defaultValue="visuals" className="flex-1 flex flex-col overflow-hidden">
-                  <TabsList className="grid w-full grid-cols-4">
-                    <TabsTrigger value="visuals"><ImageIcon className="mr-2 h-4 w-4" />Visuals</TabsTrigger>
-                    <TabsTrigger value="audio"><Volume2 className="mr-2 h-4 w-4" />Audio</TabsTrigger>
-                    <TabsTrigger value="mnemonics"><Lightbulb className="mr-2 h-4 w-4" />Mnemonics</TabsTrigger>
-                    <TabsTrigger value="story"><Link2 className="mr-2 h-4 w-4" />Story</TabsTrigger>
-                  </TabsList>
-
-                  {/* Visuals */}
-                  <TabsContent value="visuals" className="flex-1 flex flex-col overflow-hidden">
-                    <Button onClick={handleGenerateVisuals} disabled={isVisualsLoading || !!visualUrl} className="w-full mt-2">
-                      {isVisualsLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                      {visualUrl ? 'Visual Generated' : 'Generate Visual'}
-                    </Button>
-                    <ScrollArea className="mt-4 flex-1 pr-2">
-                      {isVisualsLoading && <Skeleton className="h-48 w-full" />}
-                      {visualUrl && <Image src={visualUrl} alt="Visual association" width={512} height={512} className="rounded-lg" />}
-                      {!visualUrl && !isVisualsLoading && <p className="text-sm text-center text-muted-foreground mt-8">Generate an image to help you remember.</p>}
-                    </ScrollArea>
-                  </TabsContent>
-
-                  {/* Audio */}
-                  <TabsContent value="audio" className="flex-1 flex flex-col overflow-hidden">
-                    <Button onClick={handleGenerateAudio} disabled={isAudioLoading || !!audioUrl} className="w-full mt-2">
-                      {isAudioLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                      {audioUrl ? 'Audio Generated' : 'Generate Audio'}
-                    </Button>
-                    <div className="mt-4">
-                      {isAudioLoading && <Skeleton className="h-12 w-full" />}
-                      {audioUrl && <audio controls src={audioUrl} className="w-full" />}
-                      {!audioUrl && !isAudioLoading && <p className="text-sm text-center text-muted-foreground mt-8">Generate audio of the summary (or text if no summary).</p>}
-                    </div>
-                  </TabsContent>
-
-                  {/* Mnemonics */}
-                  <TabsContent value="mnemonics" className="flex-1 flex flex-col overflow-hidden">
-                    <Button onClick={handleSuggestMnemonics} disabled={isMnemonicsLoading || mnemonics.length > 0} className="w-full mt-2">
-                      {isMnemonicsLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                      {mnemonics.length > 0 ? 'Mnemonics Suggested' : 'Suggest Mnemonics'}
-                    </Button>
-                    <ScrollArea className="mt-4 flex-1 pr-2">
-                      {isMnemonicsLoading && <div className="space-y-2"><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-full" /></div>}
-                      {mnemonics.length > 0 && <ul className="list-disc list-inside space-y-2">{mnemonics.map((m, i) => <li key={i}>{m}</li>)}</ul>}
-                      {!mnemonics.length && !isMnemonicsLoading && <p className="text-sm text-center text-muted-foreground mt-8">Generate mnemonic devices.</p>}
-                    </ScrollArea>
-                  </TabsContent>
-
-                  {/* Story */}
-                  <TabsContent value="story" className="flex-1 flex flex-col overflow-hidden">
-                    <Button onClick={handleCreateStory} disabled={isStoryLoading || !!story} className="w-full mt-2">
-                      {isStoryLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                      {story ? 'Story Created' : 'Create Story'}
-                    </Button>
-                    <ScrollArea className="mt-4 flex-1 pr-2">
-                      {isStoryLoading && <div className="space-y-2"><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-5/6" /></div>}
-                      {story && <p className="text-sm leading-relaxed">{story}</p>}
-                      {!story && !isStoryLoading && <p className="text-sm text-center text-muted-foreground mt-8">Create a story to link concepts.</p>}
-                    </ScrollArea>
-                  </TabsContent>
-                </Tabs>
-              </TabsContent>
-
-            </Tabs>
-          </CardContent>
-          </Card>
-          </ScrollArea>
-        </aside>
+            </Card>
+            </ScrollArea>
+          </aside>
+        </div>
       </div>
-    </div>
+    </>
   );
 }
