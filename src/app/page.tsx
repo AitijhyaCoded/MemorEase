@@ -314,8 +314,8 @@ export default function Home() {
         </div>
       </header>
       <div className="grid md:grid-cols-3 flex-1 overflow-hidden">
-        <main className="md:col-span-2 flex flex-col p-4 md:p-6 overflow-hidden">
-          <Card className="flex-1 flex flex-col">
+        <main className="md:col-span-2 flex flex-col p-4 md:p-6 overflow-hidden min-h-0">
+          <Card className="flex-1 flex flex-col min-h-0">
             <CardHeader className="flex flex-row items-center justify-between">
               <div className="flex items-center gap-3">
                 <Text className="h-6 w-6 text-primary" />
@@ -333,15 +333,17 @@ export default function Home() {
                  <Plus className="h-4 w-4" />
               </div>
             </CardHeader>
-            <CardContent className="flex-1 overflow-hidden">
+            <CardContent className="flex-1 p-0 overflow-hidden min-h-0">
               <ScrollArea className="h-full pr-4">
-                <Highlighter
-                  text={processedContent}
-                  highlights={highlights}
-                  bookmarks={bookmarks}
-                  fontSize={fontSize}
-                  onBookmarkToggle={toggleBookmark}
-                />
+                <div className="pr-2 pl-8">
+                  <Highlighter
+                    text={processedContent}
+                    highlights={highlights}
+                    bookmarks={bookmarks}
+                    fontSize={fontSize}
+                    onBookmarkToggle={toggleBookmark}
+                  />
+                </div>
               </ScrollArea>
             </CardContent>
           </Card>
