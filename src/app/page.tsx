@@ -1,8 +1,8 @@
 
 'use client';
 
-import { useState, useTransition, useMemo, useCallback, useEffect } from 'react';
-import { BrainCircuit, FileText, Sparkles, Bookmark, Text, Palette, Plus, Minus, X, Loader2, Image as ImageIcon, Volume2, Lightbulb, Link2, Save } from 'lucide-react';
+import { useState, useTransition, useMemo, useCallback } from 'react';
+import { BrainCircuit, FileText, Sparkles, Bookmark, Text, Palette, Plus, Minus, X, Loader2, Image as ImageIcon, Volume2, Lightbulb, Link2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
@@ -12,13 +12,10 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { generateSummaryAction, suggestHighlightsAction, generateVisualsAction, generateAudioAction, suggestMnemonicsAction, createStoryAction } from './actions';
-import { getMemory, saveMemory, getMemoryHistory } from '@/lib/firestore';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { UserNav } from '@/components/auth/user-nav';
 import Image from 'next/image';
-import { useAuth } from '@/hooks/use-auth';
-import { useSearchParams, useRouter } from 'next/navigation';
 
 type HighlighterProps = {
   text: string;
@@ -75,11 +72,6 @@ const Highlighter = ({ text, highlights, bookmarks, fontSize, onBookmarkToggle }
 
 
 export default function Home() {
-  const { user } = useAuth();
-  const searchParams = useSearchParams();
-  const router = useRouter();
-  const memoryId = searchParams.get('id');
-
   const [content, setContent] = useState('');
   const [processedContent, setProcessedContent] = useState('');
   const [summary, setSummary] = useState('');
@@ -90,7 +82,6 @@ export default function Home() {
   const [audioUrl, setAudioUrl] = useState('');
   const [mnemonics, setMnemonics] = useState<string[]>([]);
   const [story, setStory] = useState('');
-  const [currentMemoryId, setCurrentMemoryId] = useState<string | null>(memoryId);
 
   const [isSummaryLoading, startSummaryTransition] = useTransition();
   const [isHighlightsLoading, startHighlightsTransition] = useTransition();
@@ -98,91 +89,8 @@ export default function Home() {
   const [isAudioLoading, startAudioTransition] = useTransition();
   const [isMnemonicsLoading, startMnemonicsTransition] = useTransition();
   const [isStoryLoading, startStoryTransition] = useTransition();
-  const [isDataLoading, startDataLoadingTransition] = useTransition();
-  const [isSaving, startSavingTransition] = useTransition();
 
   const { toast } = useToast();
-  
-  useEffect(() => {
-    const loadData = async () => {
-      startDataLoadingTransition(async () => {
-        if (user) {
-          try {
-            const data = await getMemory(currentMemoryId);
-            if (data) {
-              setContent(data.content || '');
-              setProcessedContent(data.processedContent || data.content || '');
-              setSummary(data.summary || '');
-              setHighlights(data.highlights || []);
-              setBookmarks(data.bookmarks || []);
-              setVisualUrl(data.visualUrl || '');
-              setAudioUrl(data.audioUrl || '');
-              setMnemonics(data.mnemonics || []);
-              setStory(data.story || '');
-              setCurrentMemoryId(data.id);
-            } else if (currentMemoryId) {
-              toast({ variant: 'destructive', title: 'Error', description: 'Could not load the specified memory.' });
-              router.replace('/');
-            }
-          } catch(error: any) {
-             toast({ variant: 'destructive', title: 'Error', description: error.message });
-             router.replace('/');
-          }
-        } else if (!currentMemoryId) {
-          // Only load from local storage if there's no user and no memory id in URL
-          const savedState = localStorage.getItem('memorEaseState');
-          if (savedState) {
-            const data = JSON.parse(savedState);
-            setContent(data.content || '');
-            setProcessedContent(data.processedContent || data.content || '');
-            setSummary(data.summary || '');
-            setHighlights(data.highlights || []);
-            setBookmarks(data.bookmarks || []);
-            setVisualUrl(data.visualUrl || '');
-            setAudioUrl(data.audioUrl || '');
-            setMnemonics(data.mnemonics || []);
-            setStory(data.story || '');
-          }
-        }
-      });
-    };
-    if (user !== undefined) {
-      loadData();
-    }
-  }, [user, currentMemoryId, router, toast]);
-
-  const handleSaveContent = () => {
-    startSavingTransition(async () => {
-      const dataToSave = {
-        id: currentMemoryId,
-        content,
-        processedContent,
-        summary,
-        highlights,
-        bookmarks,
-        visualUrl,
-        audioUrl,
-        mnemonics,
-        story,
-      };
-
-      if (user) {
-        try {
-          const newMemoryId = await saveMemory(dataToSave);
-          toast({ title: 'Content Saved', description: 'Your progress has been saved to your account.' });
-          if (newMemoryId && !currentMemoryId) {
-            setCurrentMemoryId(newMemoryId);
-            router.replace(`/?id=${newMemoryId}`);
-          }
-        } catch (error: any) {
-          toast({ variant: 'destructive', title: 'Save Error', description: error.message });
-        }
-      } else {
-         localStorage.setItem('memorEaseState', JSON.stringify(dataToSave));
-         toast({ title: 'Content Saved', description: 'Your text has been saved locally.' });
-      }
-    });
-  };
 
   const handleReset = () => {
     setContent('');
@@ -194,9 +102,6 @@ export default function Home() {
     setAudioUrl('');
     setMnemonics([]);
     setStory('');
-    setCurrentMemoryId(null);
-    router.replace('/');
-    localStorage.removeItem('memorEaseState');
     toast({ title: 'New Session Started', description: 'Your previous work has been cleared.' });
   };
 
@@ -284,14 +189,6 @@ export default function Home() {
     }
     setProcessedContent(content);
   }
-
-  if (isDataLoading) {
-      return (
-        <div className="flex items-center justify-center h-screen">
-          <div className="w-16 h-16 border-4 border-dashed rounded-full animate-spin border-primary"></div>
-        </div>
-      );
-  }
   
   if (!processedContent) {
     return (
@@ -334,10 +231,6 @@ export default function Home() {
           <h1 className="text-2xl font-bold tracking-tight">MemorEase</h1>
         </div>
         <div className='flex items-center gap-2'>
-            <Button onClick={handleSaveContent} variant="outline" disabled={isSaving}>
-                {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-                Save
-            </Button>
             <Button onClick={handleReset} variant="outline">
               <Plus className="mr-2 h-4 w-4" /> New Session
             </Button>
