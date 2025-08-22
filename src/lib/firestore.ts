@@ -2,7 +2,6 @@
 import { db } from './firebase';
 import { 
     doc, 
-    setDoc, 
     getDoc, 
     addDoc, 
     collection, 
@@ -34,6 +33,8 @@ export interface Memory {
     summary: string;
     highlights: string[];
     aiGenerated: AiGeneratedContent;
+    cheatSheetHtml: string;
+    cheatSheetGeneratedAt: Timestamp;
     createdAt: Timestamp;
     updatedAt: Timestamp;
 }
@@ -44,21 +45,23 @@ export interface NewMemory {
     summary: string;
     highlights: string[];
     aiGenerated: AiGeneratedContent;
+    cheatSheetHtml: string;
 }
 
 // Save (create or update) a memory
-export async function saveMemory(memoryData: NewMemory, memoryId?: string): Promise<DocumentReference | void> {
+export async function saveMemory(memoryData: NewMemory, memoryId?: string): Promise<string> {
     const user = auth.currentUser;
     if (!user) throw new Error('User not logged in');
 
     if (memoryId) {
         // Update existing document
         const memoryRef = doc(db, MEMORIES_COLLECTION, memoryId);
-        const dataToUpdate = {
+        const dataToUpdate: Partial<Memory> = {
             ...memoryData,
-            updatedAt: serverTimestamp(),
+            updatedAt: serverTimestamp() as Timestamp,
         };
-        return updateDoc(memoryRef, dataToUpdate);
+        await updateDoc(memoryRef, dataToUpdate);
+        return memoryId;
     } else {
         // Create new document
          const dataToSave = {
@@ -67,9 +70,32 @@ export async function saveMemory(memoryData: NewMemory, memoryId?: string): Prom
             createdAt: serverTimestamp(),
             updatedAt: serverTimestamp(),
         };
-        return addDoc(collection(db, MEMORIES_COLLECTION), dataToSave);
+        const docRef = await addDoc(collection(db, MEMORIES_COLLECTION), dataToSave);
+        return docRef.id;
     }
 }
+
+
+// Save a cheat sheet to an existing memory
+export async function saveCheatSheet(memoryId: string, cheatSheetHtml: string): Promise<void> {
+    const user = auth.currentUser;
+    if (!user) throw new Error('User not logged in');
+
+    const memoryRef = doc(db, MEMORIES_COLLECTION, memoryId);
+    
+    // Verify the user owns this document before updating
+    const memorySnap = await getDoc(memoryRef);
+    if (!memorySnap.exists() || memorySnap.data().userId !== user.uid) {
+        throw new Error("Permission denied or memory not found.");
+    }
+
+    return updateDoc(memoryRef, {
+        cheatSheetHtml: cheatSheetHtml,
+        cheatSheetGeneratedAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+    });
+}
+
 
 // Get a single memory by ID
 export async function getMemory(memoryId: string): Promise<Memory | null> {

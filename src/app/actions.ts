@@ -8,6 +8,7 @@ import { generateAudio } from '@/ai/flows/generate-audio';
 import { suggestMnemonics } from '@/ai/flows/suggest-mnemonics';
 import { createStory } from '@/ai/flows/create-story';
 import { createCheatSheet } from '@/ai/flows/create-cheatsheet';
+import { saveCheatSheet } from '@/lib/firestore';
 import { z } from 'zod';
 
 const contentSchema = z.string().min(50, 'Please provide at least 50 characters of text.');
@@ -104,7 +105,7 @@ export async function createStoryAction(content: string): Promise<{ story?: stri
     }
 }
 
-export async function createCheatSheetAction(content: string): Promise<{ cheatSheet?: string; error?: string }> {
+export async function createCheatSheetAction(content: string): Promise<{ html?: string; error?: string }> {
     const validation = contentSchema.safeParse(content);
     if (!validation.success) {
         return { error: validation.error.flatten().formErrors[0] };
@@ -112,9 +113,20 @@ export async function createCheatSheetAction(content: string): Promise<{ cheatSh
 
     try {
         const result = await createCheatSheet({ text: content });
-        return { cheatSheet: result.cheatSheet };
+        return { html: result.htmlContent };
     } catch (e) {
         console.error(e);
         return { error: 'Failed to create cheat sheet. Please try again later.' };
+    }
+}
+
+
+export async function saveCheatSheetToMemoryAction(memoryId: string, cheatSheetHtml: string): Promise<{ success?: boolean; error?: string }> {
+    try {
+        await saveCheatSheet(memoryId, cheatSheetHtml);
+        return { success: true };
+    } catch (error: any) {
+        console.error("Failed to save cheat sheet:", error);
+        return { error: error.message || 'An unknown error occurred while saving the cheat sheet.' };
     }
 }

@@ -2,7 +2,7 @@
 'use client'
 
 import { useState, useEffect } from 'react';
-import { BrainCircuit, Clock, Loader2, FileText, Sparkles, Lightbulb, Link2 } from 'lucide-react';
+import { BrainCircuit, Clock, Loader2, FileText, Sparkles, Lightbulb, Link2, BookCopy } from 'lucide-react';
 import {
   Card,
   CardContent,
@@ -102,6 +102,15 @@ export default function MemoryPage() {
                                     </div>
                                 </div>
                             )}
+
+                             {item.cheatSheetHtml && (
+                                <div className='space-y-2'>
+                                  <h4 className='font-semibold text-md flex items-center gap-2'><BookCopy className="h-4 w-4"/>Cheat Sheet</h4>
+                                  <div className="prose prose-sm dark:prose-invert max-w-none p-2 border rounded-md" dangerouslySetInnerHTML={{ __html: item.cheatSheetHtml }} />
+                                  <p className="text-xs text-muted-foreground">Generated on: {item.cheatSheetGeneratedAt ? new Date(item.cheatSheetGeneratedAt.seconds * 1000).toLocaleString() : 'N/A'}</p>
+                                </div>
+                              )}
+
 
                             {item.aiGenerated && (
                                 <>

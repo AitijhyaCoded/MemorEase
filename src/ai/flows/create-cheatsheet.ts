@@ -13,7 +13,7 @@ const CreateCheatSheetInputSchema = z.object({
 export type CreateCheatSheetInput = z.infer<typeof CreateCheatSheetInputSchema>;
 
 const CreateCheatSheetOutputSchema = z.object({
-  cheatSheet: z.string().describe('The generated cheat sheet content in Markdown format.'),
+  htmlContent: z.string().describe('The generated cheat sheet content in HTML format.'),
 });
 export type CreateCheatSheetOutput = z.infer<typeof CreateCheatSheetOutputSchema>;
 
@@ -27,12 +27,15 @@ const prompt = ai.definePrompt({
   output: { schema: CreateCheatSheetOutputSchema },
   prompt: `You are an expert at creating concise and effective cheat sheets for students and professionals. Analyze the following content and generate a cheat sheet.
 
-Your output should be in Markdown format.
+Your output must be a single, valid HTML fragment. Do not include <html>, <body>, or <head> tags.
 
-- Extract key formulas and list them clearly.
-- Pull out important definitions and provide short, clear explanations.
-- If there is code, highlight the most important functions and core logic.
-- Structure the output in a clean, easy-to-read format.
+Allowed HTML tags are: h1, h2, h3, h4, p, b, strong, i, em, code, pre, ul, ol, li, hr, table, thead, tbody, tr, th, td.
+Do not use any other tags. Do not use Markdown (e.g., no asterisks or dashes for lists).
+
+- Extract key formulas and list them clearly. For formulas, use simple inline HTML like <b> or <i>, not LaTeX.
+- Pull out important definitions and provide short, clear explanations. Use <ul> or <ol> for lists.
+- If there is code, highlight the most important functions and core logic using <pre><code> blocks.
+- Structure the output in a clean, easy-to-read format using headings (h2, h3).
 
 Content to analyze:
 {{{text}}}

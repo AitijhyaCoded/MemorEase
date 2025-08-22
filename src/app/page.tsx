@@ -12,7 +12,7 @@ import { Slider } from '@/components/ui/slider';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
-import { generateSummaryAction, suggestHighlightsAction, generateVisualsAction, generateAudioAction, suggestMnemonicsAction, createStoryAction, createCheatSheetAction } from './actions';
+import { generateSummaryAction, suggestHighlightsAction, generateVisualsAction, generateAudioAction, suggestMnemonicsAction, createStoryAction, createCheatSheetAction, saveCheatSheetToMemoryAction } from './actions';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { UserNav } from '@/components/auth/user-nav';
@@ -115,6 +115,8 @@ export default function Home() {
   const [isSaveDialogOpen, setIsSaveDialogOpen] = useState(false);
   const [saveTitle, setSaveTitle] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+  const [isSavingCheatSheet, startSavingCheatSheetTransition] = useTransition();
+
 
   useEffect(() => {
     const loadMemory = async () => {
@@ -128,6 +130,7 @@ export default function Home() {
             setSaveTitle(memory.title);
             setSummary(memory.summary || '');
             setHighlights(memory.highlights || []);
+            setCheatSheet(memory.cheatSheetHtml || '');
             if (memory.aiGenerated) {
                 setMnemonics(memory.aiGenerated.mnemonics || []);
                 setStory(memory.aiGenerated.story || '');
@@ -201,13 +204,19 @@ export default function Home() {
             content: processedContent,
             summary,
             highlights,
-            aiGenerated
+            aiGenerated,
+            cheatSheetHtml: cheatSheet,
         };
 
-        await saveMemory(memoryData, memoryId || undefined);
+        const newMemoryId = await saveMemory(memoryData, memoryId || undefined);
         
         toast({ title: 'Memory Saved!', description: `"${saveTitle}" has been saved.`});
         setIsSaveDialogOpen(false);
+
+        if (newMemoryId && !memoryId) {
+            router.push(`/?id=${newMemoryId}`);
+        }
+
     } catch (error) {
         console.error("Save error:", error);
         toast({ variant: 'destructive', title: 'Save Error', description: 'Could not save memory. Please try again.' });
@@ -289,10 +298,26 @@ export default function Home() {
         if (result.error) {
             toast({ variant: 'destructive', title: 'Cheat Sheet Creation Error', description: result.error });
         } else {
-            setCheatSheet(result.cheatSheet || '');
+            setCheatSheet(result.html || '');
         }
     });
   };
+
+  const handleSaveCheatSheet = () => {
+    if (!memoryId) {
+        toast({ variant: 'destructive', title: 'Save Memory First', description: 'Please save this memory before saving a cheat sheet.' });
+        handleOpenSaveDialog();
+        return;
+    }
+     startSavingCheatSheetTransition(async () => {
+        const result = await saveCheatSheetToMemoryAction(memoryId, cheatSheet);
+        if (result.error) {
+             toast({ variant: 'destructive', title: 'Save Error', description: result.error });
+        } else {
+             toast({ title: 'Cheat Sheet Saved', description: 'Your cheat sheet has been saved to this memory.' });
+        }
+    });
+  }
 
   const toggleBookmark = (index: number) => {
     setBookmarks(prev =>
@@ -539,14 +564,24 @@ export default function Home() {
 
                      {/* Cheat Sheet */}
                     <TabsContent value="cheatsheet" className="flex-1 flex flex-col overflow-hidden">
-                      <Button onClick={handleCreateCheatSheet} disabled={isCheatSheetLoading || !!cheatSheet} className="w-full mt-2">
-                        {isCheatSheetLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        {cheatSheet ? 'Cheat Sheet Created' : 'Create Cheat Sheet'}
-                      </Button>
-                      <ScrollArea className="mt-4 flex-1 pr-2">
-                        {isCheatSheetLoading && <div className="space-y-2"><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-5/6" /></div>}
-                        {cheatSheet && <pre className="text-sm leading-relaxed whitespace-pre-wrap font-sans">{cheatSheet}</pre>}
-                        {!cheatSheet && !isCheatSheetLoading && <p className="text-sm text-center text-muted-foreground mt-8">Create a cheat sheet from your content.</p>}
+                      <div className='flex gap-2 w-full mt-2'>
+                        <Button onClick={handleCreateCheatSheet} disabled={isCheatSheetLoading || !!cheatSheet} className="w-full">
+                          {isCheatSheetLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                          {cheatSheet ? 'Regenerate' : 'Generate Cheat Sheet'}
+                        </Button>
+                         {cheatSheet && (
+                          <Button onClick={handleSaveCheatSheet} disabled={isSavingCheatSheet || !memoryId} className="w-full" variant="outline">
+                            {isSavingCheatSheet && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            Save Cheat Sheet
+                          </Button>
+                        )}
+                      </div>
+                      <ScrollArea className="mt-4 flex-1 pr-2 border rounded-md">
+                        {isCheatSheetLoading && <div className="space-y-2 p-4"><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-5/6" /></div>}
+                        
+                        {cheatSheet && <div className="prose prose-sm dark:prose-invert max-w-none p-4" dangerouslySetInnerHTML={{ __html: cheatSheet }} />}
+
+                        {!cheatSheet && !isCheatSheetLoading && <p className="text-sm text-center text-muted-foreground mt-8 p-4">Create a cheat sheet from your content.</p>}
                       </ScrollArea>
                     </TabsContent>
                   </Tabs>
