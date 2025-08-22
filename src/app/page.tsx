@@ -29,6 +29,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 type HighlighterProps = {
   text: string;
@@ -154,6 +155,8 @@ export default function Home() {
     };
     loadMemory();
   }, [memoryId, user, toast, router]);
+
+  const [moreTab, setMoreTab] = useState<'visuals'|'audio'|'mnemonics'|'story'|'cheatsheet'>('visuals');
 
 
   const handleReset = () => {
@@ -501,92 +504,101 @@ export default function Home() {
                   </ScrollArea>
                 </TabsContent>
                 <TabsContent value="more" className="flex-1 flex flex-col overflow-hidden">
-                  <Tabs defaultValue="visuals" className="flex-1 flex flex-col overflow-hidden">
-                    <TabsList className="grid w-full grid-cols-5">
-                      <TabsTrigger value="visuals"><ImageIcon className="mr-2 h-4 w-4" />Visuals</TabsTrigger>
-                      <TabsTrigger value="audio"><Volume2 className="mr-2 h-4 w-4" />Audio</TabsTrigger>
-                      <TabsTrigger value="mnemonics"><Lightbulb className="mr-2 h-4 w-4" />Mnemonics</TabsTrigger>
-                      <TabsTrigger value="story"><Link2 className="mr-2 h-4 w-4" />Story</TabsTrigger>
-                      <TabsTrigger value="cheatsheet"><BookCopy className="mr-2 h-4 w-4" />Cheat Sheet</TabsTrigger>
-                    </TabsList>
-
-                    {/* Visuals */}
-                    <TabsContent value="visuals" className="flex-1 flex flex-col overflow-hidden">
-                      <Button onClick={handleGenerateVisuals} disabled={isVisualsLoading || !!visualUrl} className="w-full mt-2">
-                        {isVisualsLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        {visualUrl ? 'Visual Generated' : 'Generate Visual'}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="outline" className="w-full mb-2 justify-between">
+                        More Tools <Plus className="ml-2 h-4 w-4" />
                       </Button>
-                      <ScrollArea className="mt-4 flex-1 pr-2">
-                        {isVisualsLoading && <Skeleton className="h-48 w-full" />}
-                        {visualUrl && <Image src={visualUrl} alt="Visual association" width={512} height={512} className="rounded-lg" />}
-                        {!visualUrl && !isVisualsLoading && <p className="text-sm text-center text-muted-foreground mt-8">Generate an image to help you remember.</p>}
-                      </ScrollArea>
-                    </TabsContent>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className="w-full">
+                      <DropdownMenuItem onClick={() => setMoreTab('visuals')}>Visuals</DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setMoreTab('audio')}>Audio</DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setMoreTab('mnemonics')}>Mnemonics</DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setMoreTab('story')}>Story</DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setMoreTab('cheatsheet')}>Cheat Sheet</DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
 
-                    {/* Audio */}
-                    <TabsContent value="audio" className="flex-1 flex flex-col overflow-hidden">
-                      <Button onClick={handleGenerateAudio} disabled={isAudioLoading || !!audioUrl} className="w-full mt-2">
-                        {isAudioLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        {audioUrl ? 'Audio Generated' : 'Generate Audio'}
-                      </Button>
-                      <div className="mt-4">
-                        {isAudioLoading && <Skeleton className="h-12 w-full" />}
-                        {audioUrl && <audio controls src={audioUrl} className="w-full" />}
-                        {!audioUrl && !isAudioLoading && <p className="text-sm text-center text-muted-foreground mt-8">Generate audio of the summary (or text if no summary).</p>}
-                      </div>
-                    </TabsContent>
-
-                    {/* Mnemonics */}
-                    <TabsContent value="mnemonics" className="flex-1 flex flex-col overflow-hidden">
-                      <Button onClick={handleSuggestMnemonics} disabled={isMnemonicsLoading || mnemonics.length > 0} className="w-full mt-2">
-                        {isMnemonicsLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        {mnemonics.length > 0 ? 'Mnemonics Suggested' : 'Suggest Mnemonics'}
-                      </Button>
-                      <ScrollArea className="mt-4 flex-1 pr-2">
-                        {isMnemonicsLoading && <div className="space-y-2"><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-full" /></div>}
-                        {mnemonics.length > 0 && <ul className="list-disc list-inside space-y-2">{mnemonics.map((m, i) => <li key={i}>{m}</li>)}</ul>}
-                        {!mnemonics.length && !isMnemonicsLoading && <p className="text-sm text-center text-muted-foreground mt-8">Generate mnemonic devices.</p>}
-                      </ScrollArea>
-                    </TabsContent>
-
-                    {/* Story */}
-                    <TabsContent value="story" className="flex-1 flex flex-col overflow-hidden">
-                      <Button onClick={handleCreateStory} disabled={isStoryLoading || !!story} className="w-full mt-2">
-                        {isStoryLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        {story ? 'Story Created' : 'Create Story'}
-                      </Button>
-                      <ScrollArea className="mt-4 flex-1 pr-2">
-                        {isStoryLoading && <div className="space-y-2"><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-5/6" /></div>}
-                        {story && <p className="text-sm leading-relaxed">{story}</p>}
-                        {!story && !isStoryLoading && <p className="text-sm text-center text-muted-foreground mt-8">Create a story to link concepts.</p>}
-                      </ScrollArea>
-                    </TabsContent>
-
-                     {/* Cheat Sheet */}
-                    <TabsContent value="cheatsheet" className="flex-1 flex flex-col overflow-hidden">
-                      <div className='flex gap-2 w-full mt-2'>
-                        <Button onClick={handleCreateCheatSheet} disabled={isCheatSheetLoading || !!cheatSheet} className="w-full">
-                          {isCheatSheetLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                          {cheatSheet ? 'Regenerate' : 'Generate Cheat Sheet'}
+                  <div className="flex-1 flex flex-col overflow-hidden">
+                    {moreTab === 'visuals' && (
+                      <>
+                        <Button onClick={handleGenerateVisuals} disabled={isVisualsLoading || !!visualUrl} className="w-full mt-2">
+                          {isVisualsLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                          {visualUrl ? 'Visual Generated' : 'Generate Visual'}
                         </Button>
-                         {cheatSheet && (
-                          <Button onClick={handleSaveCheatSheet} disabled={isSavingCheatSheet || !memoryId} className="w-full" variant="outline">
-                            {isSavingCheatSheet && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                            Save Cheat Sheet
+                        <ScrollArea className="mt-4 flex-1 pr-2">
+                          {isVisualsLoading && <Skeleton className="h-48 w-full" />}
+                          {visualUrl && <Image src={visualUrl} alt="Visual association" width={512} height={512} className="rounded-lg" />}
+                          {!visualUrl && !isVisualsLoading && <p className="text-sm text-center text-muted-foreground mt-8">Generate an image to help you remember.</p>}
+                        </ScrollArea>
+                      </>
+                    )}
+
+                    {moreTab === 'audio' && (
+                      <>
+                        <Button onClick={handleGenerateAudio} disabled={isAudioLoading || !!audioUrl} className="w-full mt-2">
+                          {isAudioLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                          {audioUrl ? 'Audio Generated' : 'Generate Audio'}
+                        </Button>
+                        <div className="mt-4">
+                          {isAudioLoading && <Skeleton className="h-12 w-full" />}
+                          {audioUrl && <audio controls src={audioUrl} className="w-full" />}
+                          {!audioUrl && !isAudioLoading && <p className="text-sm text-center text-muted-foreground mt-8">Generate audio of the summary (or text if no summary).</p>}
+                        </div>
+                      </>
+                    )}
+
+                    {moreTab === 'mnemonics' && (
+                      <>
+                        <Button onClick={handleSuggestMnemonics} disabled={isMnemonicsLoading || mnemonics.length > 0} className="w-full mt-2">
+                          {isMnemonicsLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                          {mnemonics.length > 0 ? 'Mnemonics Suggested' : 'Suggest Mnemonics'}
+                        </Button>
+                        <ScrollArea className="mt-4 flex-1 pr-2">
+                          {isMnemonicsLoading && <div className="space-y-2"><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-full" /></div>}
+                          {mnemonics.length > 0 && <ul className="list-disc list-inside space-y-2">{mnemonics.map((m, i) => <li key={i}>{m}</li>)}</ul>}
+                          {!mnemonics.length && !isMnemonicsLoading && <p className="text-sm text-center text-muted-foreground mt-8">Generate mnemonic devices.</p>}
+                        </ScrollArea>
+                      </>
+                    )}
+
+                    {moreTab === 'story' && (
+                      <>
+                        <Button onClick={handleCreateStory} disabled={isStoryLoading || !!story} className="w-full mt-2">
+                          {isStoryLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                          {story ? 'Story Created' : 'Create Story'}
+                        </Button>
+                        <ScrollArea className="mt-4 flex-1 pr-2">
+                          {isStoryLoading && <div className="space-y-2"><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-5/6" /></div>}
+                          {story && <p className="text-sm leading-relaxed">{story}</p>}
+                          {!story && !isStoryLoading && <p className="text-sm text-center text-muted-foreground mt-8">Create a story to link concepts.</p>}
+                        </ScrollArea>
+                      </>
+                    )}
+
+                    {moreTab === 'cheatsheet' && (
+                      <>
+                        <div className='flex gap-2 w-full mt-2'>
+                          <Button onClick={handleCreateCheatSheet} disabled={isCheatSheetLoading || !!cheatSheet} className="w-full">
+                            {isCheatSheetLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            {cheatSheet ? 'Regenerate' : 'Generate Cheat Sheet'}
                           </Button>
-                        )}
-                      </div>
-                      <ScrollArea className="mt-4 flex-1 pr-2 border rounded-md">
-                        {isCheatSheetLoading && <div className="space-y-2 p-4"><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-5/6" /></div>}
-                        
-                        {cheatSheet && <div className="prose prose-sm dark:prose-invert max-w-none p-4" dangerouslySetInnerHTML={{ __html: cheatSheet }} />}
-
-                        {!cheatSheet && !isCheatSheetLoading && <p className="text-sm text-center text-muted-foreground mt-8 p-4">Create a cheat sheet from your content.</p>}
-                      </ScrollArea>
-                    </TabsContent>
-                  </Tabs>
+                          {cheatSheet && (
+                            <Button onClick={handleSaveCheatSheet} disabled={isSavingCheatSheet || !memoryId} className="w-full" variant="outline">
+                              {isSavingCheatSheet && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                              Save Cheat Sheet
+                            </Button>
+                          )}
+                        </div>
+                        <ScrollArea className="mt-4 flex-1 pr-2 border rounded-md">
+                          {isCheatSheetLoading && <div className="space-y-2 p-4"><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-5/6" /></div>}
+                          {cheatSheet && <div className="prose prose-sm dark:prose-invert max-w-none p-4" dangerouslySetInnerHTML={{ __html: cheatSheet }} />}
+                          {!cheatSheet && !isCheatSheetLoading && <p className="text-sm text-center text-muted-foreground mt-8 p-4">Create a cheat sheet from your content.</p>}
+                        </ScrollArea>
+                      </>
+                    )}
+                  </div>
                 </TabsContent>
-
               </Tabs>
             </CardContent>
             </Card>
