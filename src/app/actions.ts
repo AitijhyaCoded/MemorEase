@@ -10,35 +10,24 @@ import { createStory } from '@/ai/flows/create-story';
 import { z } from 'zod';
 import { getAuth } from 'firebase/auth';
 import { app } from '@/lib/firebase';
-import { getUserData, saveUserData } from '@/lib/firestore';
+import { getMemory, saveMemory, getMemoryHistory } from '@/lib/firestore';
 import { headers } from 'next/headers';
 import { getApp } from 'firebase/app';
+import { revalidatePath } from 'next/cache';
 
 const contentSchema = z.string().min(50, 'Please provide at least 50 characters of text.');
 
 async function getUserId() {
-    const auth = getAuth(app);
-    // This is a workaround to get the user on the server.
-    // In a real app, you'd use a more robust session management solution.
-    // For this prototype, we'll rely on the client to be authenticated.
-    // This is NOT secure for production.
+    const idToken = headers().get('Authorization')?.split('Bearer ')[1];
+    if (!idToken) return null;
+    
+    // In a real app, you would use firebase-admin to verify the token.
+    // For this prototype, we'll decode it to get the UID, which is insecure but sufficient.
     try {
-        const idToken = headers().get('Authorization')?.split('Bearer ')[1];
-        if (!idToken) return null;
-        // This part is tricky without a proper admin SDK setup to verify the token.
-        // For the prototype's purpose, we'll assume the client is who they say they are.
-        // A better approach involves server-side session cookies or verifying the token.
-        // Let's assume we can get the user from the client's auth state for now.
-        // A full implementation would require `firebase-admin` to verify tokens.
-        // Since we can't use that here, we'll rely on a simpler (less secure) mechanism.
-        
-        // This is a conceptual placeholder. In a real app, you'd have a secure way
-        // to get the current user's ID on the server.
-        const user = auth.currentUser;
-        return user?.uid;
-
+        const decodedToken = JSON.parse(Buffer.from(idToken.split('.')[1], 'base64').toString());
+        return decodedToken.user_id;
     } catch (e) {
-        console.error("Auth error", e);
+        console.error("Token decoding error", e);
         return null;
     }
 }
@@ -137,29 +126,40 @@ export async function createStoryAction(content: string): Promise<{ story?: stri
 }
 
 // Firestore actions
-export async function saveUserDataAction(data: any) {
-    const auth = getAuth(getApp());
-    const user = auth.currentUser;
-    if (!user) return { error: 'You must be logged in to save data.' };
+export async function saveUserDataAction(data: any): Promise<{ success?: boolean; error?: string, id?: string }> {
+    const userId = await getUserId();
+    if (!userId) return { error: 'You must be logged in to save data.' };
     
     try {
-        await saveUserData(user.uid, data);
-        return { success: true };
+        const memoryId = await saveMemory(userId, data);
+        revalidatePath('/memory');
+        return { success: true, id: memoryId };
     } catch (error) {
         console.error('Failed to save user data:', error);
         return { error: 'Failed to save your data. Please try again.' };
     }
 }
 
-export async function getUserDataAction(): Promise<any> {
-    const auth = getAuth(getApp());
-    const user = auth.currentUser;
-    if (!user) return null;
+export async function getUserDataAction(memoryId: string | null): Promise<any> {
+    const userId = await getUserId();
+    if (!userId) return null;
 
     try {
-        return await getUserData(user.uid);
+        return await getMemory(userId, memoryId);
     } catch (error) {
         console.error('Failed to get user data:', error);
+        return null;
+    }
+}
+
+export async function getMemoryHistoryAction(): Promise<any[] | null> {
+    const userId = await getUserId();
+    if (!userId) return null;
+
+    try {
+        return await getMemoryHistory(userId);
+    } catch (error) {
+        console.error('Failed to get user history:', error);
         return null;
     }
 }

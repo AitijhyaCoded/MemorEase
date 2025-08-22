@@ -17,6 +17,7 @@ import { Badge } from '@/components/ui/badge';
 import { UserNav } from '@/components/auth/user-nav';
 import Image from 'next/image';
 import { useAuth } from '@/hooks/use-auth';
+import { useSearchParams, useRouter } from 'next/navigation';
 
 type HighlighterProps = {
   text: string;
@@ -74,6 +75,10 @@ const Highlighter = ({ text, highlights, bookmarks, fontSize, onBookmarkToggle }
 
 export default function Home() {
   const { user } = useAuth();
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const memoryId = searchParams.get('id');
+
   const [content, setContent] = useState('');
   const [processedContent, setProcessedContent] = useState('');
   const [summary, setSummary] = useState('');
@@ -84,6 +89,7 @@ export default function Home() {
   const [audioUrl, setAudioUrl] = useState('');
   const [mnemonics, setMnemonics] = useState<string[]>([]);
   const [story, setStory] = useState('');
+  const [currentMemoryId, setCurrentMemoryId] = useState<string | null>(memoryId);
 
   const [isSummaryLoading, startSummaryTransition] = useTransition();
   const [isHighlightsLoading, startHighlightsTransition] = useTransition();
@@ -98,7 +104,7 @@ export default function Home() {
   useEffect(() => {
     if (user) {
       startDataLoadingTransition(async () => {
-        const data = await getUserDataAction();
+        const data = await getUserDataAction(currentMemoryId);
         if (data) {
           setContent(data.content || '');
           setProcessedContent(data.processedContent || data.content || '');
@@ -109,20 +115,24 @@ export default function Home() {
           setAudioUrl(data.audioUrl || '');
           setMnemonics(data.mnemonics || []);
           setStory(data.story || '');
+        } else if (currentMemoryId) {
+          toast({ variant: 'destructive', title: 'Error', description: 'Could not load the specified memory.' });
+          router.replace('/');
         }
       });
-    } else {
+    } else if (!currentMemoryId) {
       const savedContent = localStorage.getItem('memorEaseContent');
       if (savedContent) {
         setContent(savedContent);
         setProcessedContent(savedContent);
       }
     }
-  }, [user]);
+  }, [user, currentMemoryId, router]);
 
   const handleSaveContent = async () => {
     if (user) {
-      await saveUserDataAction({
+      const result = await saveUserDataAction({
+        id: currentMemoryId,
         content,
         processedContent,
         summary,
@@ -133,13 +143,19 @@ export default function Home() {
         mnemonics,
         story,
       });
+      if (result.error) {
+        toast({ variant: 'destructive', title: 'Save Error', description: result.error });
+      } else {
+        toast({ title: 'Content Saved', description: 'Your progress has been saved to your account.' });
+        if (result.id && !currentMemoryId) {
+          setCurrentMemoryId(result.id);
+          router.replace(`/?id=${result.id}`);
+        }
+      }
     } else {
        localStorage.setItem('memorEaseContent', processedContent);
+       toast({ title: 'Content Saved', description: 'Your text has been saved locally.' });
     }
-    toast({
-      title: 'Content Saved',
-      description: 'Your text has been saved.',
-    });
   };
 
   const handleReset = () => {
@@ -153,21 +169,14 @@ export default function Home() {
     setMnemonics([]);
     setStory('');
     if (user) {
-      saveUserDataAction({
-        content: '',
-        processedContent: '',
-        summary: '',
-        highlights: [],
-        bookmarks: [],
-        visualUrl: '',
-        audioUrl: '',
-        mnemonics: [],
-        story: '',
-      });
+      setCurrentMemoryId(null);
+      router.replace('/');
     } else {
       localStorage.removeItem('memorEaseContent');
     }
+    toast({ title: 'Content Cleared', description: 'You can start fresh now.' });
   };
+
 
   const handleSummarize = () => {
     startSummaryTransition(async () => {
@@ -246,7 +255,6 @@ export default function Home() {
     return bookmarks.map(index => paragraphs[index]).filter(Boolean);
   }, [bookmarks, processedContent]);
 
-  if (!user && !isDataLoading) return null;
   if (isDataLoading) {
       return (
         <div className="flex items-center justify-center h-screen">
@@ -300,7 +308,7 @@ export default function Home() {
                 <Save className="mr-2 h-4 w-4" /> Save
             </Button>
             <Button onClick={handleReset} variant="outline">
-              <X className="mr-2 h-4 w-4" /> Clear Content
+              <Plus className="mr-2 h-4 w-4" /> New Session
             </Button>
             <UserNav />
         </div>

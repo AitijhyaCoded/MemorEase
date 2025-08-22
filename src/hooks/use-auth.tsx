@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -18,7 +19,7 @@ import {
   signInWithPopup,
 } from 'firebase/auth';
 import { app } from '@/lib/firebase';
-import { useRouter, usePathname } from 'next/navigation';
+import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 
 interface AuthContextType {
   user: User | null;
@@ -37,14 +38,31 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const auth = getAuth(app);
   const router = useRouter();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        const idToken = await user.getIdToken();
+        // This is a way to make the token available for server actions
+        // There are more secure/robust ways but this is ok for a prototype
+        if (typeof window !== 'undefined') {
+          document.cookie = `firebaseIdToken=${idToken}; path=/; max-age=3600`;
+        }
+      } else {
+        if (typeof window !== 'undefined') {
+          document.cookie = 'firebaseIdToken=; path=/; max-age=-1';
+        }
+      }
+      
       setUser(user);
       setLoading(false);
-      if (user && pathname === '/login') {
+      
+      const isAuthPage = pathname === '/login';
+      
+      if (user && isAuthPage) {
         router.replace('/');
-      } else if (!user && pathname !== '/login') {
+      } else if (!user && !isAuthPage) {
         router.replace('/login');
       }
     });
@@ -78,22 +96,27 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         </div>
       );
   }
-
-  // Prevent rendering children on login page if user is not authenticated yet but we are not loading
-  if (!user && pathname !== '/login') {
-    return null;
-  }
   
-  // Prevent rendering login page if user is authenticated
-  if (user && pathname === '/login') {
-      return null;
+  // This logic ensures children are only rendered when auth state is resolved
+  // and matches the page requirements (e.g. don't render protected page if not logged in)
+  if (!loading) {
+    if (user && pathname !== '/login') {
+      return (
+        <AuthContext.Provider value={value}>
+            {children}
+        </AuthContext.Provider>
+      );
+    }
+    if (!user && pathname === '/login') {
+       return (
+        <AuthContext.Provider value={value}>
+            {children}
+        </AuthContext.Provider>
+      );
+    }
   }
 
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  );
+  return null;
 };
 
 export const useAuth = (): AuthContextType => {

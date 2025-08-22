@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useAuth } from '@/hooks/use-auth';
@@ -11,7 +12,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { LogOut, User } from 'lucide-react';
+import { LogOut, User, History } from 'lucide-react';
 import Link from 'next/link';
 
 export function UserNav() {
@@ -45,6 +46,12 @@ export function UserNav() {
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
+        <Link href="/memory" passHref>
+           <DropdownMenuItem>
+                <History className="mr-2 h-4 w-4" />
+                <span>My Memory</span>
+            </DropdownMenuItem>
+        </Link>
         <DropdownMenuItem onClick={signOut}>
           <LogOut className="mr-2 h-4 w-4" />
           <span>Log out</span>
