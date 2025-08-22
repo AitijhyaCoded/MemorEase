@@ -9,7 +9,6 @@ import {
   ReactNode,
 } from 'react';
 import {
-  getAuth,
   onAuthStateChanged,
   User,
   createUserWithEmailAndPassword,
@@ -18,7 +17,7 @@ import {
   GoogleAuthProvider,
   signInWithPopup,
 } from 'firebase/auth';
-import { app } from '@/lib/firebase';
+import { app, auth, db } from '@/lib/firebase';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 
 interface AuthContextType {
@@ -35,7 +34,6 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const auth = getAuth(app);
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
