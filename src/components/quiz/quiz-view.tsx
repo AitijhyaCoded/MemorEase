@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -10,6 +10,7 @@ import { GenerateQuizOutput } from '@/ai/flows/generate-quiz';
 import { ArrowLeft, ArrowRight, RefreshCw, CheckCircle, XCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Progress } from '../ui/progress';
+import Flashcard from './flashcard';
 
 type Quiz = GenerateQuizOutput;
 type Question =
@@ -18,12 +19,13 @@ type Question =
   | { type: 'fill-in-the-blank'; data: Quiz['fillInTheBlanks'][0] };
 
 export default function QuizView({ quiz }: { quiz: Quiz }) {
-  const [allQuestions] = useState<Question[]>(() => {
+  const allQuestions = useMemo(() => {
     const mcqs: Question[] = quiz.mcqs.map(q => ({ type: 'mcq', data: q }));
     const flashcards: Question[] = quiz.flashcards.map(q => ({ type: 'flashcard', data: q }));
     const fillInTheBlanks: Question[] = quiz.fillInTheBlanks.map(q => ({ type: 'fill-in-the-blank', data: q }));
-    return [...mcqs, ...flashcards, ...fillInTheBlanks].sort(() => Math.random() - 0.5); // Shuffle questions
-  });
+    // Shuffle questions
+    return [...mcqs, ...flashcards, ...fillInTheBlanks].sort(() => Math.random() - 0.5); 
+  }, [quiz]);
 
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [userAnswers, setUserAnswers] = useState<Record<number, string>>({});
@@ -154,29 +156,7 @@ export default function QuizView({ quiz }: { quiz: Quiz }) {
           </>
         );
       case 'flashcard':
-        const [isFlipped, setIsFlipped] = useState(false);
-        return (
-          <>
-            <CardTitle>Flashcard</CardTitle>
-            <CardContent className="mt-4">
-              <div
-                className="w-full h-48 border rounded-lg flex items-center justify-center text-center p-4 cursor-pointer"
-                onClick={() => setIsFlipped(!isFlipped)}
-                style={{ perspective: '1000px' }}
-              >
-                 <div className={cn("transition-transform duration-500 w-full h-full flex items-center justify-center", isFlipped && '[transform:rotateY(180deg)]')}>
-                    <div className="[backface-visibility:hidden]">
-                        <p className="text-xl font-semibold">{currentQuestion.data.front}</p>
-                    </div>
-                     <div className="absolute [transform:rotateY(180deg)] [backface-visibility:hidden]">
-                        <p>{currentQuestion.data.back}</p>
-                    </div>
-                </div>
-              </div>
-               <p className="text-xs text-muted-foreground text-center mt-2">Click card to flip</p>
-            </CardContent>
-          </>
-        );
+        return <Flashcard front={currentQuestion.data.front} back={currentQuestion.data.back} />;
       case 'fill-in-the-blank':
         return (
           <>
