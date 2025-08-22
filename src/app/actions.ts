@@ -91,18 +91,18 @@ export async function generateVisualsAction(content: string): Promise<{ imageUrl
     }
 }
 
-export async function generateAudioAction(text: string): Promise<{ audioUrl?: string; error?: string }> {
+export async function generateAudioAction(text: string): Promise<{ audioUrl: string | null; error: string | null }> {
     const validation = contentSchema.safeParse(text);
     if (!validation.success) {
-        return { error: validation.error.flatten().formErrors[0] };
+        return { audioUrl: null, error: validation.error.flatten().formErrors[0] };
     }
 
     try {
         const result = await generateAudio({ text });
-        return { audioUrl: result.audioUrl };
+        return { audioUrl: result.audioUrl, error: null };
     } catch (e) {
         console.error(e);
-        return { error: 'Failed to generate audio. Please try again later.' };
+        return { audioUrl: null, error: 'Failed to generate audio. Please try again later.' };
     }
 }
 
