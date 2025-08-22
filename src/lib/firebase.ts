@@ -8,7 +8,7 @@ const firebaseConfig = {
   apiKey: "AIzaSyCB-gVU9AfICMwlQy5OEBisePXryRQmdZg",
   authDomain: "memorease-mqw2g.firebaseapp.com",
   projectId: "memorease-mqw2g",
-  storageBucket: "memorease-mqw2g.firebasestorage.app",
+  storageBucket: "memorease-mqw2g.appspot.com",
   messagingSenderId: "704409412703",
   appId: "1:704409412703:web:fbcfcdc1318a58f3f8a7ea"
 };

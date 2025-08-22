@@ -8,11 +8,8 @@ import { generateAudio } from '@/ai/flows/generate-audio';
 import { suggestMnemonics } from '@/ai/flows/suggest-mnemonics';
 import { createStory } from '@/ai/flows/create-story';
 import { z } from 'zod';
-import { getAuth } from 'firebase/auth';
-import { app } from '@/lib/firebase';
 import { getMemory, saveMemory, getMemoryHistory } from '@/lib/firestore';
 import { cookies } from 'next/headers';
-import { getApp } from 'firebase/app';
 import { revalidatePath } from 'next/cache';
 
 const contentSchema = z.string().min(50, 'Please provide at least 50 characters of text.');

@@ -98,6 +98,7 @@ export default function Home() {
   const [isMnemonicsLoading, startMnemonicsTransition] = useTransition();
   const [isStoryLoading, startStoryTransition] = useTransition();
   const [isDataLoading, startDataLoadingTransition] = useTransition();
+  const [isSaving, startSavingTransition] = useTransition();
 
   const { toast } = useToast();
   
@@ -127,35 +128,37 @@ export default function Home() {
         setProcessedContent(savedContent);
       }
     }
-  }, [user, currentMemoryId, router]);
+  }, [user, currentMemoryId, router, toast]);
 
-  const handleSaveContent = async () => {
-    if (user) {
-      const result = await saveUserDataAction({
-        id: currentMemoryId,
-        content,
-        processedContent,
-        summary,
-        highlights,
-        bookmarks,
-        visualUrl,
-        audioUrl,
-        mnemonics,
-        story,
-      });
-      if (result.error) {
-        toast({ variant: 'destructive', title: 'Save Error', description: result.error });
-      } else {
-        toast({ title: 'Content Saved', description: 'Your progress has been saved to your account.' });
-        if (result.id && !currentMemoryId) {
-          setCurrentMemoryId(result.id);
-          router.replace(`/?id=${result.id}`);
+  const handleSaveContent = () => {
+    startSavingTransition(async () => {
+      if (user) {
+        const result = await saveUserDataAction({
+          id: currentMemoryId,
+          content,
+          processedContent,
+          summary,
+          highlights,
+          bookmarks,
+          visualUrl,
+          audioUrl,
+          mnemonics,
+          story,
+        });
+        if (result.error) {
+          toast({ variant: 'destructive', title: 'Save Error', description: result.error });
+        } else {
+          toast({ title: 'Content Saved', description: 'Your progress has been saved to your account.' });
+          if (result.id && !currentMemoryId) {
+            setCurrentMemoryId(result.id);
+            router.replace(`/?id=${result.id}`);
+          }
         }
+      } else {
+         localStorage.setItem('memorEaseContent', processedContent);
+         toast({ title: 'Content Saved', description: 'Your text has been saved locally.' });
       }
-    } else {
-       localStorage.setItem('memorEaseContent', processedContent);
-       toast({ title: 'Content Saved', description: 'Your text has been saved locally.' });
-    }
+    });
   };
 
   const handleReset = () => {
@@ -250,11 +253,6 @@ export default function Home() {
     );
   };
 
-  const bookmarkedParagraphs = useMemo(() => {
-    const paragraphs = processedContent.split('\n').filter(p => p.trim() !== '');
-    return bookmarks.map(index => paragraphs[index]).filter(Boolean);
-  }, [bookmarks, processedContent]);
-
   if (isDataLoading) {
       return (
         <div className="flex items-center justify-center h-screen">
@@ -304,8 +302,9 @@ export default function Home() {
           <h1 className="text-2xl font-bold tracking-tight">MemorEase</h1>
         </div>
         <div className='flex items-center gap-2'>
-            <Button onClick={handleSaveContent} variant="outline">
-                <Save className="mr-2 h-4 w-4" /> Save
+            <Button onClick={handleSaveContent} variant="outline" disabled={isSaving}>
+                {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                Save
             </Button>
             <Button onClick={handleReset} variant="outline">
               <Plus className="mr-2 h-4 w-4" /> New Session
