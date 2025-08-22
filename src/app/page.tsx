@@ -3,7 +3,7 @@
 
 import { useState, useTransition, useMemo, useCallback, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { BrainCircuit, FileText, Sparkles, Bookmark, Text, Palette, Plus, Minus, X, Loader2, Image as ImageIcon, Volume2, Lightbulb, Link2, Save } from 'lucide-react';
+import { BrainCircuit, FileText, Sparkles, Bookmark, Text, Palette, Plus, Minus, X, Loader2, Image as ImageIcon, Volume2, Lightbulb, Link2, Save, BookCopy } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
@@ -12,7 +12,7 @@ import { Slider } from '@/components/ui/slider';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
-import { generateSummaryAction, suggestHighlightsAction, generateVisualsAction, generateAudioAction, suggestMnemonicsAction, createStoryAction } from './actions';
+import { generateSummaryAction, suggestHighlightsAction, generateVisualsAction, generateAudioAction, suggestMnemonicsAction, createStoryAction, createCheatSheetAction } from './actions';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { UserNav } from '@/components/auth/user-nav';
@@ -101,6 +101,7 @@ export default function Home() {
   const [audioUrl, setAudioUrl] = useState('');
   const [mnemonics, setMnemonics] = useState<string[]>([]);
   const [story, setStory] = useState('');
+  const [cheatSheet, setCheatSheet] = useState('');
 
   const [isLoadingMemory, setIsLoadingMemory] = useState(!!memoryId);
   const [isSummaryLoading, startSummaryTransition] = useTransition();
@@ -109,6 +110,7 @@ export default function Home() {
   const [isAudioLoading, startAudioTransition] = useTransition();
   const [isMnemonicsLoading, startMnemonicsTransition] = useTransition();
   const [isStoryLoading, startStoryTransition] = useTransition();
+  const [isCheatSheetLoading, startCheatSheetTransition] = useTransition();
   
   const [isSaveDialogOpen, setIsSaveDialogOpen] = useState(false);
   const [saveTitle, setSaveTitle] = useState('');
@@ -162,6 +164,7 @@ export default function Home() {
     setAudioUrl('');
     setMnemonics([]);
     setStory('');
+    setCheatSheet('');
     setSaveTitle('');
     toast({ title: 'New Session Started', description: 'Your previous work has been cleared.' });
   };
@@ -276,6 +279,17 @@ export default function Home() {
             toast({ variant: 'destructive', title: 'Story Creation Error', description: result.error });
         } else {
             setStory(result.story || '');
+        }
+    });
+  };
+
+  const handleCreateCheatSheet = () => {
+    startCheatSheetTransition(async () => {
+        const result = await createCheatSheetAction(processedContent);
+        if (result.error) {
+            toast({ variant: 'destructive', title: 'Cheat Sheet Creation Error', description: result.error });
+        } else {
+            setCheatSheet(result.cheatSheet || '');
         }
     });
   };
@@ -463,11 +477,12 @@ export default function Home() {
                 </TabsContent>
                 <TabsContent value="more" className="flex-1 flex flex-col overflow-hidden">
                   <Tabs defaultValue="visuals" className="flex-1 flex flex-col overflow-hidden">
-                    <TabsList className="grid w-full grid-cols-4">
+                    <TabsList className="grid w-full grid-cols-5">
                       <TabsTrigger value="visuals"><ImageIcon className="mr-2 h-4 w-4" />Visuals</TabsTrigger>
                       <TabsTrigger value="audio"><Volume2 className="mr-2 h-4 w-4" />Audio</TabsTrigger>
                       <TabsTrigger value="mnemonics"><Lightbulb className="mr-2 h-4 w-4" />Mnemonics</TabsTrigger>
                       <TabsTrigger value="story"><Link2 className="mr-2 h-4 w-4" />Story</TabsTrigger>
+                      <TabsTrigger value="cheatsheet"><BookCopy className="mr-2 h-4 w-4" />Cheat Sheet</TabsTrigger>
                     </TabsList>
 
                     {/* Visuals */}
@@ -519,6 +534,19 @@ export default function Home() {
                         {isStoryLoading && <div className="space-y-2"><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-5/6" /></div>}
                         {story && <p className="text-sm leading-relaxed">{story}</p>}
                         {!story && !isStoryLoading && <p className="text-sm text-center text-muted-foreground mt-8">Create a story to link concepts.</p>}
+                      </ScrollArea>
+                    </TabsContent>
+
+                     {/* Cheat Sheet */}
+                    <TabsContent value="cheatsheet" className="flex-1 flex flex-col overflow-hidden">
+                      <Button onClick={handleCreateCheatSheet} disabled={isCheatSheetLoading || !!cheatSheet} className="w-full mt-2">
+                        {isCheatSheetLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        {cheatSheet ? 'Cheat Sheet Created' : 'Create Cheat Sheet'}
+                      </Button>
+                      <ScrollArea className="mt-4 flex-1 pr-2">
+                        {isCheatSheetLoading && <div className="space-y-2"><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-5/6" /></div>}
+                        {cheatSheet && <pre className="text-sm leading-relaxed whitespace-pre-wrap font-sans">{cheatSheet}</pre>}
+                        {!cheatSheet && !isCheatSheetLoading && <p className="text-sm text-center text-muted-foreground mt-8">Create a cheat sheet from your content.</p>}
                       </ScrollArea>
                     </TabsContent>
                   </Tabs>

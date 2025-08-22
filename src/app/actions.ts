@@ -7,6 +7,7 @@ import { generateVisuals } from '@/ai/flows/generate-visuals';
 import { generateAudio } from '@/ai/flows/generate-audio';
 import { suggestMnemonics } from '@/ai/flows/suggest-mnemonics';
 import { createStory } from '@/ai/flows/create-story';
+import { createCheatSheet } from '@/ai/flows/create-cheatsheet';
 import { z } from 'zod';
 
 const contentSchema = z.string().min(50, 'Please provide at least 50 characters of text.');
@@ -100,5 +101,20 @@ export async function createStoryAction(content: string): Promise<{ story?: stri
     } catch (e) {
         console.error(e);
         return { error: 'Failed to create story. Please try again later.' };
+    }
+}
+
+export async function createCheatSheetAction(content: string): Promise<{ cheatSheet?: string; error?: string }> {
+    const validation = contentSchema.safeParse(content);
+    if (!validation.success) {
+        return { error: validation.error.flatten().formErrors[0] };
+    }
+
+    try {
+        const result = await createCheatSheet({ text: content });
+        return { cheatSheet: result.cheatSheet };
+    } catch (e) {
+        console.error(e);
+        return { error: 'Failed to create cheat sheet. Please try again later.' };
     }
 }
