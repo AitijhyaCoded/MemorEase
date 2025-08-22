@@ -19,8 +19,8 @@ const MCQSchema = z.object({
 });
 
 const FlashcardSchema = z.object({
-  front: z.string().describe('The term or question for the front of the flashcard.'),
-  back: z.string().describe('A concise but complete definition or explanation for the term on the front.'),
+  front: z.string().describe('A key term, concept, or question from the content for the front of the flashcard.'),
+  back: z.string().describe('A concise but complete explanation or definition for the term on the front. This must not repeat the content of the front.'),
 });
 
 const FillInTheBlankSchema = z.object({
@@ -47,7 +47,9 @@ const prompt = ai.definePrompt({
 
 Generate a mix of question types:
 1.  **Multiple-Choice Questions (MCQs):** Create 3-5 MCQs. Each should have a clear question, 4 plausible options, and one correct answer.
-2.  **Flashcards:** Create 3-5 flashcards. Each should have a "front" (a key term, concept, or question) and a "back" (a concise definition or answer).
+2.  **Flashcards:** Create 3-5 flashcards.
+    - The front should be a key term, concept, or question from the content.
+    - The back must be a concise explanation, definition, or short paragraph that directly explains the term on the front. Do NOT simply repeat the front. The explanation must be meaningful, readable, and sufficient for studying.
 3.  **Fill-in-the-Blanks:** Create 2-3 fill-in-the-blank questions. Take a key sentence from the text and replace a crucial word or phrase with "_____". Provide the missing word(s) as the answer.
 
 Focus on the most important facts, definitions, concepts, and relationships in the text.
