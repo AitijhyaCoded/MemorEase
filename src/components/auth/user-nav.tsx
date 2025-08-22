@@ -33,7 +33,7 @@ export function UserNav() {
           <Avatar className="h-8 w-8">
             <AvatarImage src={user.photoURL || ''} alt={user.displayName || user.email || 'User'} />
             <AvatarFallback>
-                <User />
+                {user.email?.charAt(0).toUpperCase() || <User />}
             </AvatarFallback>
           </Avatar>
         </Button>

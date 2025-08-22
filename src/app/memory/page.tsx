@@ -23,7 +23,7 @@ export default async function MemoryPage() {
 
   return (
     <div className="flex flex-col items-center min-h-screen bg-background p-4">
-        <header className="w-full flex items-center justify-between p-4 border-b shrink-0 absolute top-0 left-0">
+        <header className="w-full flex items-center justify-between p-4 border-b shrink-0 fixed top-0 left-0 bg-background/80 backdrop-blur-sm z-10">
             <Link href="/" className="flex items-center gap-3">
             <BrainCircuit className="h-8 w-8 text-primary" />
             <h1 className="text-2xl font-bold tracking-tight">MemorEase</h1>

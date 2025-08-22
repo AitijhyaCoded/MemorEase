@@ -103,48 +103,63 @@ export default function Home() {
   const { toast } = useToast();
   
   useEffect(() => {
-    if (user) {
+    const loadData = async () => {
       startDataLoadingTransition(async () => {
-        const data = await getUserDataAction(currentMemoryId);
-        if (data) {
-          setContent(data.content || '');
-          setProcessedContent(data.processedContent || data.content || '');
-          setSummary(data.summary || '');
-          setHighlights(data.highlights || []);
-          setBookmarks(data.bookmarks || []);
-          setVisualUrl(data.visualUrl || '');
-          setAudioUrl(data.audioUrl || '');
-          setMnemonics(data.mnemonics || []);
-          setStory(data.story || '');
-        } else if (currentMemoryId) {
-          toast({ variant: 'destructive', title: 'Error', description: 'Could not load the specified memory.' });
-          router.replace('/');
+        if (user) {
+          const data = await getUserDataAction(currentMemoryId);
+          if (data) {
+            setContent(data.content || '');
+            setProcessedContent(data.processedContent || data.content || '');
+            setSummary(data.summary || '');
+            setHighlights(data.highlights || []);
+            setBookmarks(data.bookmarks || []);
+            setVisualUrl(data.visualUrl || '');
+            setAudioUrl(data.audioUrl || '');
+            setMnemonics(data.mnemonics || []);
+            setStory(data.story || '');
+            setCurrentMemoryId(data.id);
+          } else if (currentMemoryId) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Could not load the specified memory.' });
+            router.replace('/');
+          }
+        } else if (!currentMemoryId) {
+          // Only load from local storage if there's no user and no memory id in URL
+          const savedState = localStorage.getItem('memorEaseState');
+          if (savedState) {
+            const data = JSON.parse(savedState);
+            setContent(data.content || '');
+            setProcessedContent(data.processedContent || data.content || '');
+            setSummary(data.summary || '');
+            setHighlights(data.highlights || []);
+            setBookmarks(data.bookmarks || []);
+            setVisualUrl(data.visualUrl || '');
+            setAudioUrl(data.audioUrl || '');
+            setMnemonics(data.mnemonics || []);
+            setStory(data.story || '');
+          }
         }
       });
-    } else if (!currentMemoryId) {
-      const savedContent = localStorage.getItem('memorEaseContent');
-      if (savedContent) {
-        setContent(savedContent);
-        setProcessedContent(savedContent);
-      }
-    }
+    };
+    loadData();
   }, [user, currentMemoryId, router, toast]);
 
   const handleSaveContent = () => {
     startSavingTransition(async () => {
+      const dataToSave = {
+        id: currentMemoryId,
+        content,
+        processedContent,
+        summary,
+        highlights,
+        bookmarks,
+        visualUrl,
+        audioUrl,
+        mnemonics,
+        story,
+      };
+
       if (user) {
-        const result = await saveUserDataAction({
-          id: currentMemoryId,
-          content,
-          processedContent,
-          summary,
-          highlights,
-          bookmarks,
-          visualUrl,
-          audioUrl,
-          mnemonics,
-          story,
-        });
+        const result = await saveUserDataAction(dataToSave);
         if (result.error) {
           toast({ variant: 'destructive', title: 'Save Error', description: result.error });
         } else {
@@ -155,7 +170,7 @@ export default function Home() {
           }
         }
       } else {
-         localStorage.setItem('memorEaseContent', processedContent);
+         localStorage.setItem('memorEaseState', JSON.stringify(dataToSave));
          toast({ title: 'Content Saved', description: 'Your text has been saved locally.' });
       }
     });
@@ -171,13 +186,10 @@ export default function Home() {
     setAudioUrl('');
     setMnemonics([]);
     setStory('');
-    if (user) {
-      setCurrentMemoryId(null);
-      router.replace('/');
-    } else {
-      localStorage.removeItem('memorEaseContent');
-    }
-    toast({ title: 'Content Cleared', description: 'You can start fresh now.' });
+    setCurrentMemoryId(null);
+    router.replace('/');
+    localStorage.removeItem('memorEaseState');
+    toast({ title: 'New Session Started', description: 'Your previous work has been cleared.' });
   };
 
 
@@ -252,6 +264,18 @@ export default function Home() {
       prev.includes(index) ? prev.filter(i => i !== index) : [...prev, index]
     );
   };
+  
+  const handleProcessContent = () => {
+    if (content.length < 50) {
+      toast({
+        variant: 'destructive',
+        title: 'Content too short',
+        description: 'Please provide at least 50 characters of text to process.',
+      });
+      return;
+    }
+    setProcessedContent(content);
+  }
 
   if (isDataLoading) {
       return (
@@ -284,7 +308,7 @@ export default function Home() {
                   placeholder="Paste text or a URL's content here... The more text, the better the AI assistance."
                   className="min-h-[300px] text-base"
                 />
-                <Button onClick={() => setProcessedContent(content)} className="mt-4 w-full" size="lg" disabled={content.length < 50}>
+                <Button onClick={handleProcessContent} className="mt-4 w-full" size="lg" disabled={content.length < 50}>
                   Process Content
                 </Button>
               </CardContent>

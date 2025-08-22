@@ -20,8 +20,6 @@ async function getUserId() {
 
     if (!idToken) return null;
     
-    // In a real app, you would use firebase-admin to verify the token.
-    // For this prototype, we'll decode it to get the UID, which is insecure but sufficient.
     try {
         const decodedToken = JSON.parse(Buffer.from(idToken.split('.')[1], 'base64').toString());
         return decodedToken.sub;

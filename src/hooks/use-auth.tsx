@@ -17,8 +17,8 @@ import {
   GoogleAuthProvider,
   signInWithPopup,
 } from 'firebase/auth';
-import { app, auth, db } from '@/lib/firebase';
-import { useRouter, usePathname, useSearchParams } from 'next/navigation';
+import { auth } from '@/lib/firebase';
+import { useRouter, usePathname } from 'next/navigation';
 
 interface AuthContextType {
   user: User | null;
@@ -36,37 +36,33 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
   const router = useRouter();
   const pathname = usePathname();
-  const searchParams = useSearchParams();
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      setUser(user);
       if (user) {
         const idToken = await user.getIdToken();
-        // This is a way to make the token available for server actions
-        // There are more secure/robust ways but this is ok for a prototype
-        if (typeof window !== 'undefined') {
-          document.cookie = `firebaseIdToken=${idToken}; path=/; max-age=3600`;
-        }
+        document.cookie = `firebaseIdToken=${idToken}; path=/; max-age=3600`;
       } else {
-        if (typeof window !== 'undefined') {
-          document.cookie = 'firebaseIdToken=; path=/; max-age=-1';
-        }
+        document.cookie = 'firebaseIdToken=; path=/; max-age=-1';
       }
-      
-      setUser(user);
       setLoading(false);
-      
-      const isAuthPage = pathname === '/login';
-      
-      if (user && isAuthPage) {
-        router.replace('/');
-      } else if (!user && !isAuthPage) {
-        router.replace('/login');
-      }
     });
 
     return () => unsubscribe();
-  }, [auth, router, pathname]);
+  }, []);
+
+  useEffect(() => {
+    if (loading) return;
+
+    const isAuthPage = pathname === '/login';
+    
+    if (user && isAuthPage) {
+      router.replace('/');
+    } else if (!user && !isAuthPage) {
+      router.replace('/login');
+    }
+  }, [user, loading, pathname, router]);
 
   const signUp = (email: string, pass: string) => {
     return createUserWithEmailAndPassword(auth, email, pass);
@@ -95,26 +91,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       );
   }
   
-  // This logic ensures children are only rendered when auth state is resolved
-  // and matches the page requirements (e.g. don't render protected page if not logged in)
-  if (!loading) {
-    if (user && pathname !== '/login') {
-      return (
-        <AuthContext.Provider value={value}>
-            {children}
-        </AuthContext.Provider>
-      );
-    }
-    if (!user && pathname === '/login') {
-       return (
-        <AuthContext.Provider value={value}>
-            {children}
-        </AuthContext.Provider>
-      );
-    }
+  const isAuthPage = pathname === '/login';
+  if ((!user && !isAuthPage) || (user && isAuthPage)) {
+    // While redirecting, don't render children to avoid flicker
+    return null;
   }
-
-  return null;
+  
+  return (
+    <AuthContext.Provider value={value}>
+        {children}
+    </AuthContext.Provider>
+  );
 };
 
 export const useAuth = (): AuthContextType => {

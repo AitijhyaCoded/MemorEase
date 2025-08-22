@@ -40,7 +40,10 @@ export async function saveMemory(userId: string, data: any) {
     await setDoc(memoryDocRef, dataToSave, { merge: true });
     return memoryId;
   } else {
-    const newDocRef = await addDoc(memoriesCollectionRef, dataToSave);
+    // If no content, use summary or first 50 chars as title for new doc
+    const title = data.content?.substring(0, 50) || data.summary?.substring(0, 50) || 'Untitled Memory';
+    const docWithTitle = { ...dataToSave, title: title + '...' };
+    const newDocRef = await addDoc(memoriesCollectionRef, docWithTitle);
     return newDocRef.id;
   }
 }
@@ -52,8 +55,8 @@ export async function getMemory(userId: string, memoryId: string | null) {
     if (docSnap.exists()) {
       const data = docSnap.data();
       // Remove non-serializable timestamp before returning
-      delete data.updatedAt;
-      return { ...data, id: docSnap.id };
+      const { updatedAt, ...rest } = data;
+      return { ...rest, id: docSnap.id };
     } else {
       return null;
     }
@@ -65,8 +68,8 @@ export async function getMemory(userId: string, memoryId: string | null) {
     if (!querySnapshot.empty) {
         const docSnap = querySnapshot.docs[0];
         const data = docSnap.data();
-        delete data.updatedAt;
-        return { ...data, id: docSnap.id };
+        const { updatedAt, ...rest } = data;
+        return { ...rest, id: docSnap.id };
     }
     return null;
   }
@@ -83,7 +86,7 @@ export async function getMemoryHistory(userId: string) {
         const updatedAt = data.updatedAt as Timestamp;
         return {
             id: doc.id,
-            title: data.content?.substring(0, 50) + '...' || 'Untitled Memory',
+            title: data.title || data.content?.substring(0, 50) + '...' || 'Untitled Memory',
             updatedAt: updatedAt?.toDate().toLocaleDateString() || '',
         };
     });
