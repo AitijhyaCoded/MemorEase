@@ -11,7 +11,8 @@ import { Slider } from '@/components/ui/slider';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
-import { generateSummaryAction, suggestHighlightsAction, generateVisualsAction, generateAudioAction, suggestMnemonicsAction, createStoryAction, getUserDataAction, saveUserDataAction } from './actions';
+import { generateSummaryAction, suggestHighlightsAction, generateVisualsAction, generateAudioAction, suggestMnemonicsAction, createStoryAction } from './actions';
+import { getMemory, saveMemory, getMemoryHistory } from '@/lib/firestore';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { UserNav } from '@/components/auth/user-nav';
@@ -106,21 +107,26 @@ export default function Home() {
     const loadData = async () => {
       startDataLoadingTransition(async () => {
         if (user) {
-          const data = await getUserDataAction(currentMemoryId);
-          if (data) {
-            setContent(data.content || '');
-            setProcessedContent(data.processedContent || data.content || '');
-            setSummary(data.summary || '');
-            setHighlights(data.highlights || []);
-            setBookmarks(data.bookmarks || []);
-            setVisualUrl(data.visualUrl || '');
-            setAudioUrl(data.audioUrl || '');
-            setMnemonics(data.mnemonics || []);
-            setStory(data.story || '');
-            setCurrentMemoryId(data.id);
-          } else if (currentMemoryId) {
-            toast({ variant: 'destructive', title: 'Error', description: 'Could not load the specified memory.' });
-            router.replace('/');
+          try {
+            const data = await getMemory(currentMemoryId);
+            if (data) {
+              setContent(data.content || '');
+              setProcessedContent(data.processedContent || data.content || '');
+              setSummary(data.summary || '');
+              setHighlights(data.highlights || []);
+              setBookmarks(data.bookmarks || []);
+              setVisualUrl(data.visualUrl || '');
+              setAudioUrl(data.audioUrl || '');
+              setMnemonics(data.mnemonics || []);
+              setStory(data.story || '');
+              setCurrentMemoryId(data.id);
+            } else if (currentMemoryId) {
+              toast({ variant: 'destructive', title: 'Error', description: 'Could not load the specified memory.' });
+              router.replace('/');
+            }
+          } catch(error: any) {
+             toast({ variant: 'destructive', title: 'Error', description: error.message });
+             router.replace('/');
           }
         } else if (!currentMemoryId) {
           // Only load from local storage if there's no user and no memory id in URL
@@ -140,7 +146,9 @@ export default function Home() {
         }
       });
     };
-    loadData();
+    if (user !== undefined) {
+      loadData();
+    }
   }, [user, currentMemoryId, router, toast]);
 
   const handleSaveContent = () => {
@@ -159,15 +167,15 @@ export default function Home() {
       };
 
       if (user) {
-        const result = await saveUserDataAction(dataToSave);
-        if (result.error) {
-          toast({ variant: 'destructive', title: 'Save Error', description: result.error });
-        } else {
+        try {
+          const newMemoryId = await saveMemory(dataToSave);
           toast({ title: 'Content Saved', description: 'Your progress has been saved to your account.' });
-          if (result.id && !currentMemoryId) {
-            setCurrentMemoryId(result.id);
-            router.replace(`/?id=${result.id}`);
+          if (newMemoryId && !currentMemoryId) {
+            setCurrentMemoryId(newMemoryId);
+            router.replace(`/?id=${newMemoryId}`);
           }
+        } catch (error: any) {
+          toast({ variant: 'destructive', title: 'Save Error', description: error.message });
         }
       } else {
          localStorage.setItem('memorEaseState', JSON.stringify(dataToSave));

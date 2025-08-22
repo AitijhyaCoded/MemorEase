@@ -1,5 +1,8 @@
 
-import { BrainCircuit, Clock } from 'lucide-react';
+'use client'
+
+import { useState, useEffect } from 'react';
+import { BrainCircuit, Clock, Loader2 } from 'lucide-react';
 import {
   Card,
   CardContent,
@@ -7,10 +10,11 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { getMemoryHistoryAction } from '../actions';
+import { getMemoryHistory } from '@/lib/firestore';
 import { UserNav } from '@/components/auth/user-nav';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
+import { useAuth } from '@/hooks/use-auth';
 
 interface MemoryItem {
     id: string;
@@ -18,8 +22,22 @@ interface MemoryItem {
     updatedAt: string;
 }
 
-export default async function MemoryPage() {
-  const history: MemoryItem[] = await getMemoryHistoryAction() || [];
+export default function MemoryPage() {
+  const { user } = useAuth();
+  const [history, setHistory] = useState<MemoryItem[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchHistory = async () => {
+      if (user) {
+        setLoading(true);
+        const userHistory = await getMemoryHistory();
+        setHistory(userHistory || []);
+        setLoading(false);
+      }
+    };
+    fetchHistory();
+  }, [user]);
 
   return (
     <div className="flex flex-col items-center min-h-screen bg-background p-4">
@@ -42,7 +60,11 @@ export default async function MemoryPage() {
                 </CardDescription>
             </CardHeader>
             <CardContent>
-                {history.length > 0 ? (
+                {loading ? (
+                    <div className="flex justify-center items-center py-12">
+                        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    </div>
+                ) : history.length > 0 ? (
                 <ul className="space-y-4">
                     {history.map((item) => (
                     <li key={item.id} className="border p-4 rounded-lg flex justify-between items-center hover:bg-muted/50 transition-colors">

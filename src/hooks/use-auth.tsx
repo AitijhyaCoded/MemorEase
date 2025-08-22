@@ -21,7 +21,7 @@ import { auth } from '@/lib/firebase';
 import { useRouter, usePathname } from 'next/navigation';
 
 interface AuthContextType {
-  user: User | null;
+  user: User | null | undefined; // undefined means still loading
   loading: boolean;
   signUp: (email: string, pass: string) => Promise<any>;
   signIn: (email: string, pass: string) => Promise<any>;
@@ -32,25 +32,18 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState<User | null | undefined>(undefined);
   const router = useRouter();
   const pathname = usePathname();
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
       setUser(user);
-      if (user) {
-        const idToken = await user.getIdToken();
-        document.cookie = `firebaseIdToken=${idToken}; path=/; max-age=3600`;
-      } else {
-        document.cookie = 'firebaseIdToken=; path=/; max-age=-1';
-      }
-      setLoading(false);
     });
-
     return () => unsubscribe();
   }, []);
+
+  const loading = user === undefined;
 
   useEffect(() => {
     if (loading) return;
@@ -78,6 +71,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const signOut = () => {
+    router.replace('/login');
     return firebaseSignOut(auth);
   };
 
@@ -92,7 +86,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }
   
   const isAuthPage = pathname === '/login';
-  if ((!user && !isAuthPage) || (user && isAuthPage)) {
+  if (!user && !isAuthPage) {
+    // While redirecting, don't render children to avoid flicker
+    return null;
+  }
+   if (user && isAuthPage) {
     // While redirecting, don't render children to avoid flicker
     return null;
   }

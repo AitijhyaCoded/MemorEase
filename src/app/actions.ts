@@ -8,31 +8,8 @@ import { generateAudio } from '@/ai/flows/generate-audio';
 import { suggestMnemonics } from '@/ai/flows/suggest-mnemonics';
 import { createStory } from '@/ai/flows/create-story';
 import { z } from 'zod';
-import { getMemory, saveMemory, getMemoryHistory } from '@/lib/firestore';
-import { cookies } from 'next/headers';
-import { revalidatePath } from 'next/cache';
-import { adminAuth } from '@/lib/firebase-admin';
 
 const contentSchema = z.string().min(50, 'Please provide at least 50 characters of text.');
-
-async function getUserId() {
-    const cookieStore = cookies();
-    const idToken = cookieStore.get('firebaseIdToken')?.value;
-
-    if (!idToken) {
-        console.log("No ID token found in cookies.");
-        return null;
-    };
-    
-    try {
-        const decodedToken = await adminAuth.verifyIdToken(idToken);
-        return decodedToken.uid;
-    } catch (e) {
-        console.error("Token verification error", e);
-        return null;
-    }
-}
-
 
 export async function generateSummaryAction(content: string): Promise<{ summary?: string; error?: string }> {
   const validation = contentSchema.safeParse(content);
@@ -123,44 +100,5 @@ export async function createStoryAction(content: string): Promise<{ story?: stri
     } catch (e) {
         console.error(e);
         return { error: 'Failed to create story. Please try again later.' };
-    }
-}
-
-// Firestore actions
-export async function saveUserDataAction(data: any): Promise<{ success?: boolean; error?: string, id?: string }> {
-    const userId = await getUserId();
-    if (!userId) return { error: 'You must be logged in to save data.' };
-    
-    try {
-        const memoryId = await saveMemory(userId, data);
-        revalidatePath('/memory');
-        return { success: true, id: memoryId };
-    } catch (error) {
-        console.error('Failed to save user data:', error);
-        return { error: 'Failed to save your data. Please try again.' };
-    }
-}
-
-export async function getUserDataAction(memoryId: string | null): Promise<any> {
-    const userId = await getUserId();
-    if (!userId) return null;
-
-    try {
-        return await getMemory(userId, memoryId);
-    } catch (error) {
-        console.error('Failed to get user data:', error);
-        return null;
-    }
-}
-
-export async function getMemoryHistoryAction(): Promise<any[] | null> {
-    const userId = await getUserId();
-    if (!userId) return null;
-
-    try {
-        return await getMemoryHistory(userId);
-    } catch (error) {
-        console.error('Failed to get user history:', error);
-        return null;
     }
 }
