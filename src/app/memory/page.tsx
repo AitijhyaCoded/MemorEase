@@ -2,7 +2,7 @@
 'use client'
 
 import { useState, useEffect } from 'react';
-import { BrainCircuit, Clock, Loader2, FileText, Sparkles, Lightbulb, Link2, BookCopy, TestTubeDiagonal } from 'lucide-react';
+import { BrainCircuit, Clock, Loader2, FileText, Sparkles, Lightbulb, Link2, BookCopy, TestTubeDiagonal, Plus } from 'lucide-react';
 import {
   Card,
   CardContent,
@@ -36,6 +36,7 @@ import { generateQuizAction } from '../actions';
 import { GenerateQuizOutput } from '@/ai/flows/generate-quiz';
 import QuizView from '@/components/quiz/quiz-view';
 import { useToast } from '@/hooks/use-toast';
+import { useRouter } from 'next/navigation';
 
 
 export default function MemoryPage() {
@@ -47,6 +48,8 @@ export default function MemoryPage() {
   const [isQuizLoading, setIsQuizLoading] = useState(false);
   const [quizTitle, setQuizTitle] = useState('');
   const { toast } = useToast();
+  const router = useRouter();
+
 
   useEffect(() => {
     const fetchHistory = async () => {
@@ -80,6 +83,10 @@ export default function MemoryPage() {
       setCurrentQuiz(result.quiz || null);
     }
     setIsQuizLoading(false);
+  }
+
+  const handleNewSession = () => {
+    router.push('/');
   }
 
   return (
@@ -120,6 +127,9 @@ export default function MemoryPage() {
             <h1 className="text-2xl font-bold tracking-tight">MemorEase</h1>
             </Link>
             <div className='flex items-center gap-2'>
+                <Button onClick={handleNewSession} variant="outline">
+                  <Plus className="mr-2 h-4 w-4" /> New Session
+                </Button>
                 <UserNav />
             </div>
       </header>
@@ -184,12 +194,10 @@ export default function MemoryPage() {
 
                             {item.aiGenerated && (
                                 <>
-                                {item.aiGenerated.mnemonics && item.aiGenerated.mnemonics.length > 0 && (
+                                {item.aiGenerated.mnemonics && (
                                     <div className='space-y-2'>
                                         <h4 className='font-semibold text-md flex items-center gap-2'><Lightbulb className="h-4 w-4"/>Mnemonics</h4>
-                                        <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
-                                            {item.aiGenerated.mnemonics.map((m, i) => <li key={i}>{m}</li>)}
-                                        </ul>
+                                        <div className="prose prose-sm dark:prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: item.aiGenerated.mnemonics }} />
                                     </div>
                                 )}
                                 {item.aiGenerated.story && (

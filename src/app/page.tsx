@@ -3,7 +3,7 @@
 
 import { useState, useTransition, useMemo, useCallback, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { BrainCircuit, FileText, Sparkles, Bookmark, Text, Palette, Plus, Minus, X, Loader2, Image as ImageIcon, Volume2, Lightbulb, Link2, Save, BookCopy } from 'lucide-react';
+import { BrainCircuit, FileText, Sparkles, Bookmark, Text, Palette, Plus, Minus, X, Loader2, Image as ImageIcon, Volume2, Lightbulb, Link2, Save, BookCopy, History } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
@@ -30,6 +30,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import Link from 'next/link';
 
 type HighlighterProps = {
   text: string;
@@ -100,7 +101,7 @@ export default function Home() {
   const [fontSize, setFontSize] = useState(16);
   const [visualUrl, setVisualUrl] = useState('');
   const [audioUrl, setAudioUrl] = useState('');
-  const [mnemonics, setMnemonics] = useState<string[]>([]);
+  const [mnemonics, setMnemonics] = useState('');
   const [story, setStory] = useState('');
   const [cheatSheet, setCheatSheet] = useState('');
 
@@ -133,7 +134,7 @@ export default function Home() {
             setHighlights(memory.highlights || []);
             setCheatSheet(memory.cheatSheetHtml || '');
             if (memory.aiGenerated) {
-                setMnemonics(memory.aiGenerated.mnemonics || []);
+                setMnemonics(memory.aiGenerated.mnemonics || '');
                 setStory(memory.aiGenerated.story || '');
                 setVisualUrl(memory.aiGenerated.visualUrl || '');
             }
@@ -168,7 +169,7 @@ export default function Home() {
     setBookmarks([]);
     setVisualUrl('');
     setAudioUrl('');
-    setMnemonics([]);
+    setMnemonics('');
     setStory('');
     setCheatSheet('');
     setSaveTitle('');
@@ -279,7 +280,7 @@ export default function Home() {
        if (result.error) {
         toast({ variant: 'destructive', title: 'Mnemonic Suggestion Error', description: result.error });
       } else {
-        setMnemonics(result.mnemonics || []);
+        setMnemonics(result.mnemonics || '');
       }
     });
   };
@@ -421,9 +422,12 @@ export default function Home() {
             <h1 className="text-2xl font-bold tracking-tight">MemorEase</h1>
           </div>
           <div className='flex items-center gap-2'>
-              <Button onClick={handleOpenSaveDialog} variant="outline" disabled={!user}>
+              <Button onClick={handleOpenSaveDialog} variant="default" disabled={!user}>
                 <Save className="mr-2 h-4 w-4" /> Save
               </Button>
+              <Link href="/memory" passHref>
+                <Button variant="outline"><History className="mr-2 h-4 w-4" /> My Memory</Button>
+              </Link>
               <Button onClick={handleReset} variant="outline">
                 <Plus className="mr-2 h-4 w-4" /> New Session
               </Button>
@@ -550,14 +554,14 @@ export default function Home() {
 
                     {moreTab === 'mnemonics' && (
                       <>
-                        <Button onClick={handleSuggestMnemonics} disabled={isMnemonicsLoading || mnemonics.length > 0} className="w-full mt-2">
+                        <Button onClick={handleSuggestMnemonics} disabled={isMnemonicsLoading || !!mnemonics} className="w-full mt-2">
                           {isMnemonicsLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                          {mnemonics.length > 0 ? 'Mnemonics Suggested' : 'Suggest Mnemonics'}
+                          {mnemonics ? 'Mnemonics Suggested' : 'Suggest Mnemonics'}
                         </Button>
                         <ScrollArea className="mt-4 flex-1 pr-2">
                           {isMnemonicsLoading && <div className="space-y-2"><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-full" /></div>}
-                          {mnemonics.length > 0 && <ul className="list-disc list-inside space-y-2">{mnemonics.map((m, i) => <li key={i}>{m}</li>)}</ul>}
-                          {!mnemonics.length && !isMnemonicsLoading && <p className="text-sm text-center text-muted-foreground mt-8">Generate mnemonic devices.</p>}
+                          {mnemonics && <div className="prose prose-sm dark:prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: mnemonics }} />}
+                          {!mnemonics && !isMnemonicsLoading && <p className="text-sm text-center text-muted-foreground mt-8">Generate mnemonic devices.</p>}
                         </ScrollArea>
                       </>
                     )}
