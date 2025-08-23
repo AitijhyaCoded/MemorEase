@@ -16,7 +16,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion"
-import { getMemoryHistory, Memory, deleteMemory } from '@/lib/firestore';
+import { getMemoryHistory, Memory } from '@/lib/firestore';
 import { UserNav } from '@/components/auth/user-nav';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -44,7 +44,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 
-import { generateQuizAction, deleteMemoryAction } from '../actions';
+import { generateQuizAction } from '../actions';
 import { GenerateQuizOutput } from '@/ai/flows/generate-quiz';
 import QuizView from '@/components/quiz/quiz-view';
 import { useToast } from '@/hooks/use-toast';
@@ -101,21 +101,12 @@ export default function MemoryPage() {
     router.push('/');
   }
 
-  const handleDelete = async (memoryId: string) => {
-    const result = await deleteMemoryAction(memoryId);
-    if (result.error) {
-      toast({
-        variant: 'destructive',
-        title: 'Deletion Failed',
-        description: result.error,
-      });
-    } else {
-      setHistory(prev => prev.filter(item => item.id !== memoryId));
-      toast({
-        title: 'Memory Deleted',
-        description: 'The memory session has been permanently removed.',
-      });
-    }
+  const handleDelete = (memoryId: string) => {
+    setHistory(prev => prev.filter(item => item.id !== memoryId));
+    toast({
+      title: 'Memory Removed',
+      description: 'The memory session has been removed from this view.',
+    });
   }
 
 
