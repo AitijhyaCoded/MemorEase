@@ -12,9 +12,12 @@ import { generateQuiz, GenerateQuizOutput } from '@/ai/flows/generate-quiz';
 import { saveCheatSheet } from '@/lib/firestore';
 import { askDoubt } from '@/ai/flows/ask-doubt';
 import { z } from 'zod';
+import { getNotes, addNote, updateNote, deleteNote, Note } from '@/lib/firestore';
+
 
 const contentSchema = z.string().min(50, 'Please provide at least 50 characters of text.');
 const questionSchema = z.string().min(1, 'Please enter a question.');
+const noteSchema = z.string().min(1, 'Note cannot be empty.');
 
 export async function generateSummaryAction(content: string): Promise<{ summary?: string; error?: string }> {
   const validation = contentSchema.safeParse(content);
@@ -86,7 +89,7 @@ export async function suggestMnemonicsAction(content: string): Promise<{ mnemoni
 
     try {
         const result = await suggestMnemonics({ text: content });
-        return { mnemonics: result.mnemonics };
+        return { mnemonics: result.mnemonics.join('\n') };
     } catch (e) {
         console.error(e);
         return { error: 'Failed to suggest mnemonics. Please try again later.' };
@@ -165,5 +168,56 @@ export async function askDoubtAction(context: string, question: string): Promise
     } catch (e) {
         console.error(e);
         return { error: 'Failed to get an answer. Please try again.' };
+    }
+}
+
+
+// --- Notes Actions ---
+
+export async function getNotesAction(): Promise<{ notes?: Note[], error?: string }> {
+    try {
+        const notes = await getNotes();
+        return { notes };
+    } catch (error: any) {
+        console.error("Failed to get notes:", error);
+        return { error: error.message || 'Failed to fetch notes.' };
+    }
+}
+
+export async function addNoteAction(content: string): Promise<{ note?: Note, error?: string }> {
+    const validation = noteSchema.safeParse(content);
+    if (!validation.success) {
+        return { error: validation.error.flatten().formErrors[0] };
+    }
+    try {
+        const newNote = await addNote(content);
+        return { note: newNote };
+    } catch (error: any) {
+        console.error("Failed to add note:", error);
+        return { error: error.message || 'Failed to add note.' };
+    }
+}
+
+export async function updateNoteAction(noteId: string, content: string): Promise<{ success?: boolean; error?: string }> {
+    const validation = noteSchema.safeParse(content);
+    if (!validation.success) {
+        return { error: validation.error.flatten().formErrors[0] };
+    }
+    try {
+        await updateNote(noteId, content);
+        return { success: true };
+    } catch (error: any) {
+        console.error("Failed to update note:", error);
+        return { error: error.message || 'Failed to update note.' };
+    }
+}
+
+export async function deleteNoteAction(noteId: string): Promise<{ success?: boolean; error?: string }> {
+    try {
+        await deleteNote(noteId);
+        return { success: true };
+    } catch (error: any) {
+        console.error("Failed to delete note:", error);
+        return { error: error.message || 'Failed to delete note.' };
     }
 }

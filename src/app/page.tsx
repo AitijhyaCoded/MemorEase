@@ -32,6 +32,8 @@ import { Label } from "@/components/ui/label";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import Link from 'next/link';
 import ChatDialog from '@/components/chat/chat-dialog';
+import NotesSection from '@/components/notes/notes-section';
+
 
 // --- helpers to make any context safe for chat ---
 const toStringLoose = (val: unknown): string => {
@@ -528,197 +530,198 @@ export default function Home() {
           </main>
           <aside className="md:col-span-1 p-2 md:p-6 border-l flex flex-col overflow-hidden">
           <ScrollArea className="h-full">
-            <Card className="w-full flex-1 flex flex-col">
-            <CardHeader className='p-4 md:p-6'>
-               <CardTitle className="flex items-center gap-3"><Palette className="h-6 w-6 text-primary" />AI Toolkit</CardTitle>
-            </CardHeader>
-            <CardContent className="flex-1 flex flex-col overflow-hidden p-2 pt-0 md:p-6 md:pt-0">
-              <Tabs defaultValue="summary" className="flex-1 flex flex-col overflow-hidden">
-                <TabsList className="grid w-full grid-cols-3">
-                  <TabsTrigger value="summary">Summary</TabsTrigger>
-                  <TabsTrigger value="highlights">Highlights</TabsTrigger>
-                  <TabsTrigger value="more"><Plus className="mr-2 h-4 w-4" />More</TabsTrigger>
-                </TabsList>
-                <TabsContent value="summary" className="flex-1 flex flex-col overflow-hidden">
-                  <div className="flex gap-2 w-full mt-2">
-                    <Button onClick={handleSummarize} disabled={isSummaryLoading || !!summary} className="w-full">
-                      {isSummaryLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                      {summary ? 'Summary Generated' : 'Generate Summary'}
-                    </Button>
-                     {summary && (
-                      <Button variant="outline" size="icon" onClick={() => handleOpenChat('Summary', summary)}>
-                        <MessageCircleQuestion className="h-4 w-4" />
+            <Card className="w-full flex-1 flex flex-col mb-4">
+              <CardHeader className='p-4 md:p-6'>
+                 <CardTitle className="flex items-center gap-3"><Palette className="h-6 w-6 text-primary" />AI Toolkit</CardTitle>
+              </CardHeader>
+              <CardContent className="flex-1 flex flex-col overflow-hidden p-2 pt-0 md:p-6 md:pt-0">
+                <Tabs defaultValue="summary" className="flex-1 flex flex-col overflow-hidden">
+                  <TabsList className="grid w-full grid-cols-3">
+                    <TabsTrigger value="summary">Summary</TabsTrigger>
+                    <TabsTrigger value="highlights">Highlights</TabsTrigger>
+                    <TabsTrigger value="more"><Plus className="mr-2 h-4 w-4" />More</TabsTrigger>
+                  </TabsList>
+                  <TabsContent value="summary" className="flex-1 flex flex-col overflow-hidden">
+                    <div className="flex gap-2 w-full mt-2">
+                      <Button onClick={handleSummarize} disabled={isSummaryLoading || !!summary} className="w-full">
+                        {isSummaryLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        {summary ? 'Summary Generated' : 'Generate Summary'}
                       </Button>
-                    )}
-                  </div>
-                  <ScrollArea className="mt-4 flex-1 pr-2">
-                    {isSummaryLoading && <div className="space-y-2"><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-5/6" /></div>}
-                    {summary && <p className="text-sm leading-relaxed">{summary}</p>}
-                    {!summary && !isSummaryLoading && <p className="text-sm text-center text-muted-foreground mt-8">Click "Generate Summary" to create a concise version of your text.</p>}
-                  </ScrollArea>
-                </TabsContent>
-                <TabsContent value="highlights" className="flex-1 flex flex-col overflow-hidden">
-                  <div className="flex gap-2 w-full mt-2">
-                    <Button onClick={handleHighlight} disabled={isHighlightsLoading || highlights.length > 0} className="w-full">
-                      {isHighlightsLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                       {highlights.length > 0 ? 'Highlights Suggested' : 'Suggest Highlights'}
-                    </Button>
-                    {highlights.length > 0 && (
-                        <Button variant="outline" size="icon" onClick={() => handleOpenChat('Highlights', highlights.join(', '))}>
-                            <MessageCircleQuestion className="h-4 w-4" />
+                       {summary && (
+                        <Button variant="outline" size="icon" onClick={() => handleOpenChat('Summary', summary)}>
+                          <MessageCircleQuestion className="h-4 w-4" />
                         </Button>
-                    )}
-                  </div>
-                  <ScrollArea className="mt-4 flex-1 pr-2">
-                    {isHighlightsLoading && <div className="space-y-2"><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-5/6" /></div>}
-                    {highlights.length > 0 ? (
-                      <div className="flex flex-wrap gap-2">
-                        {highlights.map((h, i) => <Badge key={i} variant="secondary" className="text-sm">{h}</Badge>)}
-                      </div>
-                    ) : !isHighlightsLoading && <p className="text-sm text-center text-muted-foreground mt-8">Click "Suggest Highlights" to find key phrases.</p>}
-                  </ScrollArea>
-                </TabsContent>
-                <TabsContent value="more" className="flex-1 flex flex-col overflow-hidden">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="outline" className="w-full mb-2 justify-between capitalize">
-                        {moreTab} <Plus className="ml-2 h-4 w-4" />
+                      )}
+                    </div>
+                    <ScrollArea className="mt-4 flex-1 pr-2">
+                      {isSummaryLoading && <div className="space-y-2"><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-5/6" /></div>}
+                      {summary && <p className="text-sm leading-relaxed">{summary}</p>}
+                      {!summary && !isSummaryLoading && <p className="text-sm text-center text-muted-foreground mt-8">Click "Generate Summary" to create a concise version of your text.</p>}
+                    </ScrollArea>
+                  </TabsContent>
+                  <TabsContent value="highlights" className="flex-1 flex flex-col overflow-hidden">
+                    <div className="flex gap-2 w-full mt-2">
+                      <Button onClick={handleHighlight} disabled={isHighlightsLoading || highlights.length > 0} className="w-full">
+                        {isHighlightsLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                         {highlights.length > 0 ? 'Highlights Suggested' : 'Suggest Highlights'}
                       </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent className="w-[calc(100vw-2.5rem)] md:w-[calc(33.33vw-4.5rem)]">
-                      <DropdownMenuItem onClick={() => setMoreTab('visuals')}>Visuals</DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => setMoreTab('audio')}>Audio</DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => setMoreTab('mnemonics')}>Mnemonics</DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => setMoreTab('story')}>Story</DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => setMoreTab('cheatsheet')}>Cheat Sheet</DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-
-                  <div className="flex-1 flex flex-col overflow-hidden">
-                    {moreTab === 'visuals' && (
-                      <>
-                        <div className="flex gap-2 w-full mt-2">
-                          <Button onClick={handleGenerateVisuals} disabled={isVisualsLoading || !!visualUrl} className="w-full">
-                            {isVisualsLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                            {visualUrl ? 'Visual Generated' : 'Generate Visual'}
-                          </Button>
-                          {visualUrl && (
-                            <Button
-                              variant="outline"
-                              size="icon"
-                              onClick={() => handleOpenChat('Visual', summary || processedContent)}
-                            >
+                      {highlights.length > 0 && (
+                          <Button variant="outline" size="icon" onClick={() => handleOpenChat('Highlights', highlights.join(', '))}>
                               <MessageCircleQuestion className="h-4 w-4" />
-                            </Button>
-                          )}
-                        </div>
-                        <ScrollArea className="mt-4 flex-1 pr-2">
-                          {isVisualsLoading && <Skeleton className="h-48 w-full" />}
-                          {visualUrl && <Image src={visualUrl} alt="Visual association" width={512} height={512} className="rounded-lg" />}
-                          {!visualUrl && !isVisualsLoading && <p className="text-sm text-center text-muted-foreground mt-8">Generate an image to help you remember.</p>}
-                        </ScrollArea>
-                      </>
-                    )}
-
-                    {moreTab === 'audio' && (
-                      <>
-                        <div className="flex gap-2 w-full mt-2">
-                            <Button onClick={handleGenerateAudio} disabled={isAudioLoading || !!audioUrl} className="w-full">
-                            {isAudioLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                            {audioUrl ? 'Audio Generated' : 'Generate Audio'}
-                            </Button>
-                            {audioUrl && (
-                              <Button
-                                variant="outline"
-                                size="icon"
-                                onClick={() => handleOpenChat('Audio Recitation', summary || processedContent)}
-                              >
-                                <MessageCircleQuestion className="h-4 w-4" />
-                              </Button>
-                            )}
-                        </div>
-                        <div className="mt-4">
-                          {isAudioLoading && <Skeleton className="h-12 w-full" />}
-                          {audioUrl && <audio controls src={audioUrl} className="w-full" />}
-                          {!audioUrl && !isAudioLoading && <p className="text-sm text-center text-muted-foreground mt-8">Generate audio of the summary (or text if no summary).</p>}
-                        </div>
-                      </>
-                    )}
-
-                    {moreTab === 'mnemonics' && (
-                      <>
-                        <div className="flex gap-2 w-full mt-2">
-                            <Button onClick={handleSuggestMnemonics} disabled={isMnemonicsLoading || !!mnemonics} className="w-full">
-                            {isMnemonicsLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                            {mnemonics ? 'Mnemonics Suggested' : 'Suggest Mnemonics'}
-                            </Button>
-                            {mnemonics && (
-                              <Button
-                                variant="outline"
-                                size="icon"
-                                onClick={() => handleOpenChat('Mnemonics', mnemonics)}
-                              >
-                                <MessageCircleQuestion className="h-4 w-4" />
-                              </Button>
-                            )}
-                        </div>
-                        <ScrollArea className="mt-4 flex-1 pr-2">
-                          {isMnemonicsLoading && <div className="space-y-2"><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-full" /></div>}
-                          {mnemonics && <p className="text-sm leading-relaxed whitespace-pre-wrap">{mnemonics}</p>}
-                          {!mnemonics && !isMnemonicsLoading && <p className="text-sm text-center text-muted-foreground mt-8">Generate mnemonic devices.</p>}
-                        </ScrollArea>
-                      </>
-                    )}
-
-                    {moreTab === 'story' && (
-                      <>
-                        <div className="flex gap-2 w-full mt-2">
-                            <Button onClick={handleCreateStory} disabled={isStoryLoading || !!story} className="w-full">
-                            {isStoryLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                            {story ? 'Story Created' : 'Create Story'}
-                            </Button>
-                             {story && (
-                                <Button variant="outline" size="icon" onClick={() => handleOpenChat('Story', story)}>
-                                    <MessageCircleQuestion className="h-4 w-4" />
-                                </Button>
-                            )}
-                        </div>
-                        <ScrollArea className="mt-4 flex-1 pr-2">
-                          {isStoryLoading && <div className="space-y-2"><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-5/6" /></div>}
-                          {story && <p className="text-sm leading-relaxed">{story}</p>}
-                          {!story && !isStoryLoading && <p className="text-sm text-center text-muted-foreground mt-8">Create a story to link concepts.</p>}
-                        </ScrollArea>
-                      </>
-                    )}
-
-                    {moreTab === 'cheatsheet' && (
-                      <>
-                        <div className='flex gap-2 w-full mt-2'>
-                          <Button onClick={handleCreateCheatSheet} disabled={isCheatSheetLoading || !!cheatSheet} className="w-full">
-                            {isCheatSheetLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                            {cheatSheet ? 'Cheet Sheat Generated' : 'Generate Cheat Sheet'}
                           </Button>
-                          {cheatSheet && (
-                            <>
-                                <Button variant="outline" size="icon" onClick={() => handleOpenChat('Cheat Sheet', cheatSheet)}>
-                                    <MessageCircleQuestion className="h-4 w-4" />
-                                </Button>
-                            </>
-                          )}
+                      )}
+                    </div>
+                    <ScrollArea className="mt-4 flex-1 pr-2">
+                      {isHighlightsLoading && <div className="space-y-2"><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-5/6" /></div>}
+                      {highlights.length > 0 ? (
+                        <div className="flex flex-wrap gap-2">
+                          {highlights.map((h, i) => <Badge key={i} variant="secondary" className="text-sm">{h}</Badge>)}
                         </div>
-                        <ScrollArea className="mt-4 flex-1 pr-2 border rounded-md">
-                          {isCheatSheetLoading && <div className="space-y-2 p-4"><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-5/6" /></div>}
-                          {cheatSheet && <div className="prose prose-sm dark:prose-invert max-w-none p-4" dangerouslySetInnerHTML={{ __html: cheatSheet }} />}
-                          {!cheatSheet && !isCheatSheetLoading && <p className="text-sm text-center text-muted-foreground mt-8 p-4">Create a cheat sheet from your content.</p>}
-                        </ScrollArea>
-                      </>
-                    )}
-                  </div>
-                </TabsContent>
-              </Tabs>
-            </CardContent>
+                      ) : !isHighlightsLoading && <p className="text-sm text-center text-muted-foreground mt-8">Click "Suggest Highlights" to find key phrases.</p>}
+                    </ScrollArea>
+                  </TabsContent>
+                  <TabsContent value="more" className="flex-1 flex flex-col overflow-hidden">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="outline" className="w-full mb-2 justify-between capitalize">
+                          {moreTab} <Plus className="ml-2 h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent className="w-[calc(100vw-2.5rem)] md:w-[calc(33.33vw-4.5rem)]">
+                        <DropdownMenuItem onClick={() => setMoreTab('visuals')}>Visuals</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => setMoreTab('audio')}>Audio</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => setMoreTab('mnemonics')}>Mnemonics</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => setMoreTab('story')}>Story</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => setMoreTab('cheatsheet')}>Cheat Sheet</DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+
+                    <div className="flex-1 flex flex-col overflow-hidden">
+                      {moreTab === 'visuals' && (
+                        <>
+                          <div className="flex gap-2 w-full mt-2">
+                            <Button onClick={handleGenerateVisuals} disabled={isVisualsLoading || !!visualUrl} className="w-full">
+                              {isVisualsLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                              {visualUrl ? 'Visual Generated' : 'Generate Visual'}
+                            </Button>
+                            {visualUrl && (
+                              <Button
+                                variant="outline"
+                                size="icon"
+                                onClick={() => handleOpenChat('Visual', summary || processedContent)}
+                              >
+                                <MessageCircleQuestion className="h-4 w-4" />
+                              </Button>
+                            )}
+                          </div>
+                          <ScrollArea className="mt-4 flex-1 pr-2">
+                            {isVisualsLoading && <Skeleton className="h-48 w-full" />}
+                            {visualUrl && <Image src={visualUrl} alt="Visual association" width={512} height={512} className="rounded-lg" />}
+                            {!visualUrl && !isVisualsLoading && <p className="text-sm text-center text-muted-foreground mt-8">Generate an image to help you remember.</p>}
+                          </ScrollArea>
+                        </>
+                      )}
+
+                      {moreTab === 'audio' && (
+                        <>
+                          <div className="flex gap-2 w-full mt-2">
+                              <Button onClick={handleGenerateAudio} disabled={isAudioLoading || !!audioUrl} className="w-full">
+                              {isAudioLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                              {audioUrl ? 'Audio Generated' : 'Generate Audio'}
+                              </Button>
+                              {audioUrl && (
+                                <Button
+                                  variant="outline"
+                                  size="icon"
+                                  onClick={() => handleOpenChat('Audio Recitation', summary || processedContent)}
+                                >
+                                  <MessageCircleQuestion className="h-4 w-4" />
+                                </Button>
+                              )}
+                          </div>
+                          <div className="mt-4">
+                            {isAudioLoading && <Skeleton className="h-12 w-full" />}
+                            {audioUrl && <audio controls src={audioUrl} className="w-full" />}
+                            {!audioUrl && !isAudioLoading && <p className="text-sm text-center text-muted-foreground mt-8">Generate audio of the summary (or text if no summary).</p>}
+                          </div>
+                        </>
+                      )}
+
+                      {moreTab === 'mnemonics' && (
+                        <>
+                          <div className="flex gap-2 w-full mt-2">
+                              <Button onClick={handleSuggestMnemonics} disabled={isMnemonicsLoading || !!mnemonics} className="w-full">
+                              {isMnemonicsLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                              {mnemonics ? 'Mnemonics Suggested' : 'Suggest Mnemonics'}
+                              </Button>
+                              {mnemonics && (
+                                <Button
+                                  variant="outline"
+                                  size="icon"
+                                  onClick={() => handleOpenChat('Mnemonics', mnemonics)}
+                                >
+                                  <MessageCircleQuestion className="h-4 w-4" />
+                                </Button>
+                              )}
+                          </div>
+                          <ScrollArea className="mt-4 flex-1 pr-2">
+                            {isMnemonicsLoading && <div className="space-y-2"><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-full" /></div>}
+                            {mnemonics && <p className="text-sm leading-relaxed whitespace-pre-wrap">{mnemonics}</p>}
+                            {!mnemonics && !isMnemonicsLoading && <p className="text-sm text-center text-muted-foreground mt-8">Generate mnemonic devices.</p>}
+                          </ScrollArea>
+                        </>
+                      )}
+
+                      {moreTab === 'story' && (
+                        <>
+                          <div className="flex gap-2 w-full mt-2">
+                              <Button onClick={handleCreateStory} disabled={isStoryLoading || !!story} className="w-full">
+                              {isStoryLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                              {story ? 'Story Created' : 'Create Story'}
+                              </Button>
+                               {story && (
+                                  <Button variant="outline" size="icon" onClick={() => handleOpenChat('Story', story)}>
+                                      <MessageCircleQuestion className="h-4 w-4" />
+                                  </Button>
+                              )}
+                          </div>
+                          <ScrollArea className="mt-4 flex-1 pr-2">
+                            {isStoryLoading && <div className="space-y-2"><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-5/6" /></div>}
+                            {story && <p className="text-sm leading-relaxed">{story}</p>}
+                            {!story && !isStoryLoading && <p className="text-sm text-center text-muted-foreground mt-8">Create a story to link concepts.</p>}
+                          </ScrollArea>
+                        </>
+                      )}
+
+                      {moreTab === 'cheatsheet' && (
+                        <>
+                          <div className='flex gap-2 w-full mt-2'>
+                            <Button onClick={handleCreateCheatSheet} disabled={isCheatSheetLoading || !!cheatSheet} className="w-full">
+                              {isCheatSheetLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                              {cheatSheet ? 'Cheet Sheat Generated' : 'Generate Cheat Sheet'}
+                            </Button>
+                            {cheatSheet && (
+                              <>
+                                  <Button variant="outline" size="icon" onClick={() => handleOpenChat('Cheat Sheet', cheatSheet)}>
+                                      <MessageCircleQuestion className="h-4 w-4" />
+                                  </Button>
+                              </>
+                            )}
+                          </div>
+                          <ScrollArea className="mt-4 flex-1 pr-2 border rounded-md">
+                            {isCheatSheetLoading && <div className="space-y-2 p-4"><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-5/6" /></div>}
+                            {cheatSheet && <div className="prose prose-sm dark:prose-invert max-w-none p-4" dangerouslySetInnerHTML={{ __html: cheatSheet }} />}
+                            {!cheatSheet && !isCheatSheetLoading && <p className="text-sm text-center text-muted-foreground mt-8 p-4">Create a cheat sheet from your content.</p>}
+                          </ScrollArea>
+                        </>
+                      )}
+                    </div>
+                  </TabsContent>
+                </Tabs>
+              </CardContent>
             </Card>
-            </ScrollArea>
+            <NotesSection />
+          </ScrollArea>
           </aside>
         </div>
       </div>
