@@ -700,10 +700,6 @@ export default function Home() {
                           </Button>
                           {cheatSheet && (
                             <>
-                                <Button onClick={handleSaveCheatSheet} disabled={isSavingCheatSheet || !memoryId} variant="outline">
-                                {isSavingCheatSheet && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                Save
-                                </Button>
                                 <Button variant="outline" size="icon" onClick={() => handleOpenChat('Cheat Sheet', cheatSheet)}>
                                     <MessageCircleQuestion className="h-4 w-4" />
                                 </Button>

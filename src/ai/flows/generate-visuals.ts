@@ -30,7 +30,13 @@ const generateVisualsFlow = ai.defineFlow(
   async (input) => {
     const { media } = await ai.generate({
         model: 'googleai/gemini-2.0-flash-preview-image-generation',
-        prompt: `Generate a simple, memorable, and clear visual association (image or flowchart) for the following text. The image should be symbolic and help with memorization. Text: ${input.text}`,
+        prompt: `Create a clean, minimal mind map or diagram that helps memorize the following text. 
+        Rules:
+        - Do NOT include extra paragraphs or explanations.
+        - Only produce a visual diagram as an image.
+        - Use simple symbols, small graphics, arrows, or boxes for clarity.
+        - Keep it readable and spaced out, like a mind map.
+        Text: ${input.text}`,
         config: {
             responseModalities: ['TEXT', 'IMAGE'],
         },
