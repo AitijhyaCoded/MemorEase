@@ -9,7 +9,7 @@ import { suggestMnemonics } from '@/ai/flows/suggest-mnemonics';
 import { createStory } from '@/ai/flows/create-story';
 import { createCheatSheet } from '@/ai/flows/create-cheatsheet';
 import { generateQuiz, GenerateQuizOutput } from '@/ai/flows/generate-quiz';
-import { saveCheatSheet } from '@/lib/firestore';
+import { saveCheatSheet, deleteMemory } from '@/lib/firestore';
 import { askDoubt } from '@/ai/flows/ask-doubt';
 import { z } from 'zod';
 
@@ -165,5 +165,16 @@ export async function askDoubtAction(context: string, question: string): Promise
     } catch (e) {
         console.error(e);
         return { error: 'Failed to get an answer. Please try again.' };
+    }
+}
+
+
+export async function deleteMemoryAction(memoryId: string): Promise<{ success?: boolean; error?: string }> {
+    try {
+        await deleteMemory(memoryId);
+        return { success: true };
+    } catch (error: any) {
+        console.error("Failed to delete memory:", error);
+        return { error: error.message || 'An unknown error occurred while deleting the memory.' };
     }
 }

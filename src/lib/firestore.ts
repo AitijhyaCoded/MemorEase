@@ -13,7 +13,8 @@ import {
     where,
     DocumentReference,
     DocumentData,
-    updateDoc
+    updateDoc,
+    deleteDoc
 } from 'firebase/firestore';
 import { auth } from './firebase';
 
@@ -127,4 +128,20 @@ export async function getMemoryHistory(): Promise<Memory[]> {
 
     const querySnapshot = await getDocs(q);
     return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Memory));
+}
+
+// Delete a memory by ID
+export async function deleteMemory(memoryId: string): Promise<void> {
+    const user = auth.currentUser;
+    if (!user) throw new Error('User not logged in');
+
+    const memoryRef = doc(db, MEMORIES_COLLECTION, memoryId);
+    
+    // Optional: Verify the user owns this document before deleting
+    const memorySnap = await getDoc(memoryRef);
+    if (!memorySnap.exists() || memorySnap.data().userId !== user.uid) {
+        throw new Error("Permission denied or memory not found.");
+    }
+
+    await deleteDoc(memoryRef);
 }
