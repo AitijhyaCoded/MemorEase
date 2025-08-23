@@ -26,16 +26,19 @@ const prompt = ai.definePrompt({
   name: 'askDoubtPrompt',
   input: { schema: AskDoubtInputSchema },
   output: { schema: AskDoubtOutputSchema },
-  prompt: `You are a helpful study assistant. The user has a doubt about the following content. Your task is to provide a clear and concise answer based ONLY on the provided context. Do not use any external knowledge.
+  prompt: `You are a helpful study assistant. 
+  Answer the user's question using the provided context whenever possible. 
+  If the context does not contain the answer, use your own general knowledge to give a clear and accurate response, 
+  but make it clear when the answer is not in the context.
 
-Context:
----
-{{{context}}}
----
+  Context:
+  ---
+  {{{context}}}
+  ---
 
-User's Question: "{{{question}}}"
+  User's Question: "{{{question}}}"
 
-Your Answer:`,
+  Your Answer:`,
 });
 
 const askDoubtFlow = ai.defineFlow(

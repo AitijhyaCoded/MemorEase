@@ -33,6 +33,29 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import Link from 'next/link';
 import ChatDialog from '@/components/chat/chat-dialog';
 
+// --- helpers to make any context safe for chat ---
+const toStringLoose = (val: unknown): string => {
+  if (typeof val === 'string') return val;
+  if (Array.isArray(val)) return val.map(v => toStringLoose(v)).join('\n');
+  if (val && typeof val === 'object') {
+    // Some generators return { html: "..."} or rich objects
+    // Prefer an html/string field if present
+    const anyVal = val as any;
+    if (typeof anyVal.html === 'string') return anyVal.html;
+    try { return JSON.stringify(val); } catch { return String(val); }
+  }
+  return String(val ?? '');
+};
+
+const htmlToText = (html: string): string =>
+  html
+    .replace(/<script[\s\S]*?<\/script>/gi, '')
+    .replace(/<style[\s\S]*?<\/style>/gi, '')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+
 type HighlighterProps = {
   text: string;
   highlights: string[];
@@ -233,18 +256,25 @@ export default function Home() {
     }
   };
 
-  const handleOpenChat = (title: string, content: string) => {
-    if (!content || content.trim().length < 10) {
+  const handleOpenChat = (title: string, rawContext: unknown) => {
+    // 1) coerce anything to string
+    const asString = toStringLoose(rawContext);
+    // 2) strip HTML if any
+    const plain = htmlToText(asString);
+  
+    if (!plain || plain.length < 20) {
       toast({
         variant: 'destructive',
         title: 'Not enough content',
-        description: 'There is not enough content to ask a question about.',
+        description: 'There is not enough readable content to ask a question about.',
       });
       return;
     }
-    setChatContext({ title, content });
+  
+    setChatContext({ title, content: plain });
     setIsChatOpen(true);
   };
+  
 
   const handleSummarize = () => {
     startSummaryTransition(async () => {
@@ -293,13 +323,15 @@ export default function Home() {
   const handleSuggestMnemonics = () => {
     startMnemonicsTransition(async () => {
       const result = await suggestMnemonicsAction(processedContent);
-       if (result.error) {
+      if (result.error) {
         toast({ variant: 'destructive', title: 'Mnemonic Suggestion Error', description: result.error });
       } else {
-        setMnemonics(result.mnemonics || '');
+        // Force to string even if API returns {html: "..."} or array
+        const asString = htmlToText(toStringLoose(result.mnemonics));
+        setMnemonics(asString);
       }
     });
-  };
+  };  
   
   const handleCreateStory = () => {
     startStoryTransition(async () => {
@@ -570,9 +602,13 @@ export default function Home() {
                             {isVisualsLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                             {visualUrl ? 'Visual Generated' : 'Generate Visual'}
                           </Button>
-                           {visualUrl && (
-                            <Button variant="outline" size="icon" onClick={() => handleOpenChat('Visual', 'An AI-generated image related to the content.')}>
-                                <MessageCircleQuestion className="h-4 w-4" />
+                          {visualUrl && (
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              onClick={() => handleOpenChat('Visual', summary || processedContent)}
+                            >
+                              <MessageCircleQuestion className="h-4 w-4" />
                             </Button>
                           )}
                         </div>
@@ -591,10 +627,14 @@ export default function Home() {
                             {isAudioLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                             {audioUrl ? 'Audio Generated' : 'Generate Audio'}
                             </Button>
-                             {audioUrl && (
-                                <Button variant="outline" size="icon" onClick={() => handleOpenChat('Audio Recitation', summary || processedContent)}>
-                                    <MessageCircleQuestion className="h-4 w-4" />
-                                </Button>
+                            {audioUrl && (
+                              <Button
+                                variant="outline"
+                                size="icon"
+                                onClick={() => handleOpenChat('Audio Recitation', summary || processedContent)}
+                              >
+                                <MessageCircleQuestion className="h-4 w-4" />
+                              </Button>
                             )}
                         </div>
                         <div className="mt-4">
@@ -613,14 +653,18 @@ export default function Home() {
                             {mnemonics ? 'Mnemonics Suggested' : 'Suggest Mnemonics'}
                             </Button>
                             {mnemonics && (
-                                <Button variant="outline" size="icon" onClick={() => handleOpenChat('Mnemonics', mnemonics)}>
-                                    <MessageCircleQuestion className="h-4 w-4" />
-                                </Button>
+                              <Button
+                                variant="outline"
+                                size="icon"
+                                onClick={() => handleOpenChat('Mnemonics', mnemonics)}
+                              >
+                                <MessageCircleQuestion className="h-4 w-4" />
+                              </Button>
                             )}
                         </div>
                         <ScrollArea className="mt-4 flex-1 pr-2">
                           {isMnemonicsLoading && <div className="space-y-2"><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-full" /></div>}
-                          {mnemonics && <div className="prose prose-sm dark:prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: mnemonics }} />}
+                          {mnemonics && <p className="text-sm leading-relaxed whitespace-pre-wrap">{mnemonics}</p>}
                           {!mnemonics && !isMnemonicsLoading && <p className="text-sm text-center text-muted-foreground mt-8">Generate mnemonic devices.</p>}
                         </ScrollArea>
                       </>
@@ -652,7 +696,7 @@ export default function Home() {
                         <div className='flex gap-2 w-full mt-2'>
                           <Button onClick={handleCreateCheatSheet} disabled={isCheatSheetLoading || !!cheatSheet} className="w-full">
                             {isCheatSheetLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                            {cheatSheet ? 'Regenerate' : 'Generate Cheat Sheet'}
+                            {cheatSheet ? 'Cheet Sheat Generated' : 'Generate Cheat Sheet'}
                           </Button>
                           {cheatSheet && (
                             <>
