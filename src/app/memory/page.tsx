@@ -16,7 +16,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion"
-import { getMemoryHistory, Memory } from '@/lib/firestore';
+import { getMemoryHistory, Memory, deleteMemory } from '@/lib/firestore';
 import { UserNav } from '@/components/auth/user-nav';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -101,12 +101,22 @@ export default function MemoryPage() {
     router.push('/');
   }
 
-  const handleDelete = (memoryId: string) => {
-    setHistory(prev => prev.filter(item => item.id !== memoryId));
-    toast({
-      title: 'Memory Removed',
-      description: 'The memory session has been removed from this view.',
-    });
+  const handleDelete = async (memoryId: string) => {
+    const result = await deleteMemoryAction(memoryId);
+
+    if (result.success) {
+      setHistory(prev => prev.filter(item => item.id !== memoryId));
+      toast({
+        title: 'Memory Deleted',
+        description: 'The memory session has been permanently deleted.',
+      });
+    } else {
+      toast({
+        variant: 'destructive',
+        title: 'Deletion Failed',
+        description: result.error || 'Could not delete the memory session.',
+      });
+    }
   }
 
 

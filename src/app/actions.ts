@@ -170,12 +170,13 @@ export async function askDoubtAction(context: string, question: string): Promise
     }
 }
 
-export async function deleteMemoryAction(memoryId: string): Promise<{ success?: boolean, error?: string }> {
+export async function deleteMemoryAction(memoryId: string, userId: string) {
     try {
-        await deleteMemory(memoryId);
-        return { success: true };
-    } catch (error: any) {
-        console.error("Failed to delete memory:", error);
-        return { error: error.message || 'Failed to delete memory.' };
+      await deleteMemory(memoryId, userId);
+      return { success: true };  // ✅ always return an object
+    } catch (error) {
+      console.error("Delete error:", error);
+      return { success: false, error: (error as Error).message };
     }
 }
+  
