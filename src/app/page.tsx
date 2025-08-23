@@ -3,7 +3,7 @@
 
 import { useState, useTransition, useMemo, useCallback, useEffect, useRef } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { BrainCircuit, FileText, Sparkles, Bookmark, Text, Palette, Plus, Minus, X, Loader2, Image as ImageIcon, Volume2, Lightbulb, Link2, Save, BookCopy, History, MessageCircleQuestion } from 'lucide-react';
+import { BrainCircuit, FileText, Sparkles, Bookmark, Text, Palette, Plus, Minus, X, Loader2, Image as ImageIcon, Volume2, Lightbulb, Link2, Save, BookCopy, History, MessageCircleQuestion, Notebook } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
@@ -32,8 +32,6 @@ import { Label } from "@/components/ui/label";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import Link from 'next/link';
 import ChatDialog from '@/components/chat/chat-dialog';
-import NotesSection from '@/components/notes/notes-section';
-
 
 // --- helpers to make any context safe for chat ---
 const toStringLoose = (val: unknown): string => {
@@ -130,6 +128,7 @@ export default function Home() {
   const [mnemonics, setMnemonics] = useState('');
   const [story, setStory] = useState('');
   const [cheatSheet, setCheatSheet] = useState('');
+  const [notes, setNotes] = useState('');
   
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [chatContext, setChatContext] = useState<{ title: string; content: string } | null>(null);
@@ -162,6 +161,7 @@ export default function Home() {
             setSummary(memory.summary || '');
             setHighlights(memory.highlights || []);
             setCheatSheet(memory.cheatSheetHtml || '');
+            setNotes(memory.notes || '');
             if (memory.aiGenerated) {
                 setMnemonics(memory.aiGenerated.mnemonics || '');
                 setStory(memory.aiGenerated.story || '');
@@ -202,6 +202,7 @@ export default function Home() {
     setStory('');
     setCheatSheet('');
     setSaveTitle('');
+    setNotes('');
     toast({ title: 'New Session Started', description: 'Your previous work has been cleared.' });
   };
   
@@ -239,6 +240,7 @@ export default function Home() {
             highlights,
             aiGenerated,
             cheatSheetHtml: cheatSheet,
+            notes,
         };
 
         const newMemoryId = await saveMemory(memoryData, memoryId || undefined);
@@ -647,30 +649,30 @@ export default function Home() {
                         </>
                       )}
 
-                      {moreTab === 'mnemonics' && (
-                        <>
-                          <div className="flex gap-2 w-full mt-2">
-                              <Button onClick={handleSuggestMnemonics} disabled={isMnemonicsLoading || !!mnemonics} className="w-full">
-                              {isMnemonicsLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                              {mnemonics ? 'Mnemonics Suggested' : 'Suggest Mnemonics'}
+                    {moreTab === 'mnemonics' && (
+                      <>
+                        <div className="flex gap-2 w-full mt-2">
+                            <Button onClick={handleSuggestMnemonics} disabled={isMnemonicsLoading || !!mnemonics} className="w-full">
+                            {isMnemonicsLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            {mnemonics ? 'Mnemonics Suggested' : 'Suggest Mnemonics'}
+                            </Button>
+                            {mnemonics && (
+                              <Button
+                                variant="outline"
+                                size="icon"
+                                onClick={() => handleOpenChat('Mnemonics', mnemonics)}
+                              >
+                                <MessageCircleQuestion className="h-4 w-4" />
                               </Button>
-                              {mnemonics && (
-                                <Button
-                                  variant="outline"
-                                  size="icon"
-                                  onClick={() => handleOpenChat('Mnemonics', mnemonics)}
-                                >
-                                  <MessageCircleQuestion className="h-4 w-4" />
-                                </Button>
-                              )}
-                          </div>
-                          <ScrollArea className="mt-4 flex-1 pr-2">
-                            {isMnemonicsLoading && <div className="space-y-2"><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-full" /></div>}
-                            {mnemonics && <p className="text-sm leading-relaxed whitespace-pre-wrap">{mnemonics}</p>}
-                            {!mnemonics && !isMnemonicsLoading && <p className="text-sm text-center text-muted-foreground mt-8">Generate mnemonic devices.</p>}
-                          </ScrollArea>
-                        </>
-                      )}
+                            )}
+                        </div>
+                        <ScrollArea className="mt-4 flex-1 pr-2">
+                          {isMnemonicsLoading && <div className="space-y-2"><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-full" /></div>}
+                          {mnemonics && <p className="text-sm leading-relaxed whitespace-pre-wrap">{mnemonics}</p>}
+                          {!mnemonics && !isMnemonicsLoading && <p className="text-sm text-center text-muted-foreground mt-8">Generate mnemonic devices.</p>}
+                        </ScrollArea>
+                      </>
+                    )}
 
                       {moreTab === 'story' && (
                         <>
@@ -693,35 +695,34 @@ export default function Home() {
                         </>
                       )}
 
-                      {moreTab === 'cheatsheet' && (
-                        <>
-                          <div className='flex gap-2 w-full mt-2'>
-                            <Button onClick={handleCreateCheatSheet} disabled={isCheatSheetLoading || !!cheatSheet} className="w-full">
-                              {isCheatSheetLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                              {cheatSheet ? 'Cheet Sheat Generated' : 'Generate Cheat Sheet'}
-                            </Button>
-                            {cheatSheet && (
-                              <>
-                                  <Button variant="outline" size="icon" onClick={() => handleOpenChat('Cheat Sheet', cheatSheet)}>
-                                      <MessageCircleQuestion className="h-4 w-4" />
-                                  </Button>
-                              </>
-                            )}
-                          </div>
-                          <ScrollArea className="mt-4 flex-1 pr-2 border rounded-md">
-                            {isCheatSheetLoading && <div className="space-y-2 p-4"><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-5/6" /></div>}
-                            {cheatSheet && <div className="prose prose-sm dark:prose-invert max-w-none p-4" dangerouslySetInnerHTML={{ __html: cheatSheet }} />}
-                            {!cheatSheet && !isCheatSheetLoading && <p className="text-sm text-center text-muted-foreground mt-8 p-4">Create a cheat sheet from your content.</p>}
-                          </ScrollArea>
-                        </>
-                      )}
-                    </div>
-                  </TabsContent>
-                </Tabs>
-              </CardContent>
+                    {moreTab === 'cheatsheet' && (
+                      <>
+                        <div className='flex gap-2 w-full mt-2'>
+                          <Button onClick={handleCreateCheatSheet} disabled={isCheatSheetLoading || !!cheatSheet} className="w-full">
+                            {isCheatSheetLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            {cheatSheet ? 'Cheet Sheat Generated' : 'Generate Cheat Sheet'}
+                          </Button>
+                          {cheatSheet && (
+                            <>
+                                <Button variant="outline" size="icon" onClick={() => handleOpenChat('Cheat Sheet', cheatSheet)}>
+                                    <MessageCircleQuestion className="h-4 w-4" />
+                                </Button>
+                            </>
+                          )}
+                        </div>
+                        <ScrollArea className="mt-4 flex-1 pr-2 border rounded-md">
+                          {isCheatSheetLoading && <div className="space-y-2 p-4"><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-5/6" /></div>}
+                          {cheatSheet && <div className="prose prose-sm dark:prose-invert max-w-none p-4" dangerouslySetInnerHTML={{ __html: cheatSheet }} />}
+                          {!cheatSheet && !isCheatSheetLoading && <p className="text-sm text-center text-muted-foreground mt-8 p-4">Create a cheat sheet from your content.</p>}
+                        </ScrollArea>
+                      </>
+                    )}
+                  </div>
+                </TabsContent>
+              </Tabs>
+            </CardContent>
             </Card>
-            <NotesSection />
-          </ScrollArea>
+            </ScrollArea>
           </aside>
         </div>
       </div>

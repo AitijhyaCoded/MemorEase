@@ -2,7 +2,7 @@
 'use client'
 
 import { useState, useEffect } from 'react';
-import { BrainCircuit, Clock, Loader2, FileText, Sparkles, Lightbulb, Link2, BookCopy, TestTubeDiagonal, Plus, Trash2 } from 'lucide-react';
+import { BrainCircuit, Clock, Loader2, FileText, Sparkles, Lightbulb, Link2, BookCopy, TestTubeDiagonal, Plus } from 'lucide-react';
 import {
   Card,
   CardContent,
@@ -16,7 +16,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion"
-import { getMemoryHistory, Memory } from '@/lib/firestore';
+import { getMemoryHistory, Memory, deleteMemory } from '@/lib/firestore';
 import { UserNav } from '@/components/auth/user-nav';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -32,18 +32,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog"
-
-import { generateQuizAction, deleteMemoryAction } from '../actions';
+import { generateQuizAction } from '../actions';
 import { GenerateQuizOutput } from '@/ai/flows/generate-quiz';
 import QuizView from '@/components/quiz/quiz-view';
 import { useToast } from '@/hooks/use-toast';
@@ -103,38 +92,6 @@ export default function MemoryPage() {
   const handleNewSession = () => {
     router.push('/');
   }
-
-  const openDeleteDialog = (memoryId: string) => {
-    setMemoryToDelete(memoryId);
-    setIsDeleteDialogOpen(true);
-  };
-  
-  const handleDeleteMemory = async () => {
-    if (!memoryToDelete) return;
-  
-    setIsDeleting(true);
-    const result = await deleteMemoryAction(memoryToDelete);
-  
-    if (result.error) {
-      toast({
-        variant: 'destructive',
-        title: 'Deletion Failed',
-        description: result.error,
-      });
-    } else {
-      toast({
-        title: 'Memory Deleted',
-        description: 'The memory session has been permanently removed.',
-      });
-      // Update UI by removing the deleted item from the state
-      setHistory(prev => prev.filter(item => item.id !== memoryToDelete));
-    }
-  
-    setIsDeleting(false);
-    setIsDeleteDialogOpen(false);
-    setMemoryToDelete(null);
-  };
-  
 
   return (
     <>
@@ -222,7 +179,7 @@ export default function MemoryPage() {
                                 <h3 className="font-semibold text-lg">{item.title}</h3>
                                 <p className="text-sm text-muted-foreground flex items-center gap-2 mt-1">
                                     <Clock className="h-4 w-4" /> 
-                                    Last updated: {item.updatedAt ? formatDistanceToNow(new Date(item.updatedAt.seconds * 1000), { addSuffix: true }) : 'a while ago'}
+                                    Last updated: {item.updatedAt ? formatDistanceToNow(new Date((item.updatedAt.seconds || Date.now()/1000) * 1000), { addSuffix: true }) : 'a while ago'}
                                 </p>
                             </div>
                         </AccordionTrigger>
@@ -255,6 +212,13 @@ export default function MemoryPage() {
                                   <div className="prose prose-sm dark:prose-invert max-w-none p-2 border rounded-md" dangerouslySetInnerHTML={{ __html: item.cheatSheetHtml }} />
                                 </div>
                               )}
+                            
+                            {item.notes && (
+                                <div className='space-y-2'>
+                                    <h4 className='font-semibold text-md flex items-center gap-2'><Notebook className="h-4 w-4"/>My Notes</h4>
+                                    <p className='text-sm text-muted-foreground whitespace-pre-wrap'>{item.notes}</p>
+                                </div>
+                            )}
 
 
                             {item.aiGenerated && (
@@ -286,10 +250,6 @@ export default function MemoryPage() {
                                  <Button variant="outline" size="sm" onClick={() => handleTakeQuiz(item)}>
                                      <TestTubeDiagonal className="mr-2 h-4 w-4" />
                                      Take Quiz
-                                </Button>
-                                 <Button variant="destructive" size="sm" onClick={() => openDeleteDialog(item.id)}>
-                                     <Trash2 className="mr-2 h-4 w-4" />
-                                     Delete
                                 </Button>
                             </div>
                            </div>

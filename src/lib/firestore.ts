@@ -11,7 +11,6 @@ import {
     serverTimestamp, 
     Timestamp, 
     where,
-    DocumentReference,
     DocumentData,
     updateDoc,
     deleteDoc
@@ -19,8 +18,6 @@ import {
 import { auth } from './firebase';
 
 const MEMORIES_COLLECTION = 'memories';
-const NOTES_COLLECTION = 'notes';
-
 
 export interface AiGeneratedContent {
     mnemonics: string;
@@ -40,6 +37,7 @@ export interface Memory {
     cheatSheetGeneratedAt: Timestamp;
     createdAt: Timestamp;
     updatedAt: Timestamp;
+    notes?: string;
 }
 
 export interface NewMemory {
@@ -49,6 +47,7 @@ export interface NewMemory {
     highlights: string[];
     aiGenerated: AiGeneratedContent;
     cheatSheetHtml: string;
+    notes?: string;
 }
 
 // Save (create or update) a memory
@@ -146,90 +145,4 @@ export async function deleteMemory(memoryId: string): Promise<void> {
     }
 
     await deleteDoc(memoryRef);
-}
-
-
-// ---- Notes ----
-
-export interface Note {
-    id: string;
-    userId: string;
-    content: string;
-    createdAt: Date;
-    updatedAt: Date;
-}
-
-// Get all notes for the current user
-export async function getNotes(): Promise<Note[]> {
-    const user = auth.currentUser;
-    if (!user) throw new Error('User not logged in');
-
-    const q = query(
-        collection(db, NOTES_COLLECTION),
-        where('userId', '==', user.uid),
-        orderBy('createdAt', 'desc')
-    );
-
-    const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(doc => {
-        const data = doc.data();
-        return {
-            id: doc.id,
-            ...data,
-            createdAt: (data.createdAt as Timestamp).toDate(),
-            updatedAt: (data.updatedAt as Timestamp).toDate(),
-        } as Note;
-    });
-}
-
-// Add a new note
-export async function addNote(content: string): Promise<Note> {
-    const user = auth.currentUser;
-    if (!user) throw new Error('User not logged in');
-
-    const docRef = await addDoc(collection(db, NOTES_COLLECTION), {
-        userId: user.uid,
-        content: content,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-    });
-    
-    const newDoc = await getDoc(docRef);
-    const data = newDoc.data();
-    return {
-        id: newDoc.id,
-        ...data,
-        createdAt: (data!.createdAt as Timestamp).toDate(),
-        updatedAt: (data!.updatedAt as Timestamp).toDate(),
-    } as Note;
-}
-
-// Update an existing note
-export async function updateNote(noteId: string, content: string): Promise<void> {
-    const user = auth.currentUser;
-    if (!user) throw new Error('User not logged in');
-
-    const noteRef = doc(db, NOTES_COLLECTION, noteId);
-    const noteSnap = await getDoc(noteRef);
-    if (!noteSnap.exists() || noteSnap.data().userId !== user.uid) {
-        throw new Error("Permission denied or note not found.");
-    }
-
-    await updateDoc(noteRef, {
-        content: content,
-        updatedAt: serverTimestamp(),
-    });
-}
-
-// Delete a note
-export async function deleteNote(noteId: string): Promise<void> {
-    const user = auth.currentUser;
-    if (!user) throw new Error('User not logged in');
-
-    const noteRef = doc(db, NOTES_COLLECTION, noteId);
-    const noteSnap = await getDoc(noteRef);
-    if (!noteSnap.exists() || noteSnap.data().userId !== user.uid) {
-        throw new Error("Permission denied or note not found.");
-    }
-    await deleteDoc(noteRef);
 }

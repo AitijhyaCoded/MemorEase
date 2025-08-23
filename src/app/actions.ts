@@ -12,8 +12,6 @@ import { generateQuiz, GenerateQuizOutput } from '@/ai/flows/generate-quiz';
 import { saveCheatSheet, deleteMemory } from '@/lib/firestore';
 import { askDoubt } from '@/ai/flows/ask-doubt';
 import { z } from 'zod';
-import { getNotes, addNote, updateNote, deleteNote, Note } from '@/lib/firestore';
-
 
 const contentSchema = z.string().min(50, 'Please provide at least 50 characters of text.');
 const questionSchema = z.string().min(1, 'Please enter a question.');
@@ -171,6 +169,7 @@ export async function askDoubtAction(context: string, question: string): Promise
     }
 }
 
+
 export async function deleteMemoryAction(memoryId: string): Promise<{ success?: boolean; error?: string }> {
     try {
         await deleteMemory(memoryId);
@@ -178,50 +177,5 @@ export async function deleteMemoryAction(memoryId: string): Promise<{ success?: 
     } catch (error: any) {
         console.error("Failed to delete memory:", error);
         return { error: error.message || 'An unknown error occurred while deleting the memory.' };
-    }
-}
-
-// --- Note Actions ---
-export async function getNotesAction(): Promise<{ notes?: Note[], error?: string }> {
-    try {
-        const notes = await getNotes();
-        return { notes };
-    } catch (error: any) {
-        return { error: error.message };
-    }
-}
-
-export async function addNoteAction(content: string): Promise<{ note?: Note, error?: string }> {
-    const validation = noteSchema.safeParse(content);
-    if (!validation.success) {
-        return { error: validation.error.flatten().formErrors[0] };
-    }
-    try {
-        const note = await addNote(content);
-        return { note };
-    } catch (error: any) {
-        return { error: error.message };
-    }
-}
-
-export async function updateNoteAction(noteId: string, content: string): Promise<{ success?: boolean, error?: string }> {
-     const validation = noteSchema.safeParse(content);
-    if (!validation.success) {
-        return { error: validation.error.flatten().formErrors[0] };
-    }
-    try {
-        await updateNote(noteId, content);
-        return { success: true };
-    } catch (error: any) {
-        return { error: error.message };
-    }
-}
-
-export async function deleteNoteAction(noteId: string): Promise<{ success?: boolean, error?: string }> {
-    try {
-        await deleteNote(noteId);
-        return { success: true };
-    } catch (error: any) {
-        return { error: error.message };
     }
 }
