@@ -10,9 +10,11 @@ import { createStory } from '@/ai/flows/create-story';
 import { createCheatSheet } from '@/ai/flows/create-cheatsheet';
 import { generateQuiz, GenerateQuizOutput } from '@/ai/flows/generate-quiz';
 import { saveCheatSheet } from '@/lib/firestore';
+import { askDoubt } from '@/ai/flows/ask-doubt';
 import { z } from 'zod';
 
 const contentSchema = z.string().min(50, 'Please provide at least 50 characters of text.');
+const questionSchema = z.string().min(1, 'Please enter a question.');
 
 export async function generateSummaryAction(content: string): Promise<{ summary?: string; error?: string }> {
   const validation = contentSchema.safeParse(content);
@@ -76,7 +78,7 @@ export async function generateAudioAction(text: string): Promise<{ audioUrl: str
     }
 }
 
-export async function suggestMnemonicsAction(content: string): Promise<{ mnemonics?: string[]; error?: string }> {
+export async function suggestMnemonicsAction(content: string): Promise<{ mnemonics?: string; error?: string }> {
     const validation = contentSchema.safeParse(content);
     if (!validation.success) {
         return { error: validation.error.flatten().formErrors[0] };
@@ -144,5 +146,24 @@ export async function generateQuizAction(content: string): Promise<{ quiz?: Gene
     } catch (e) {
         console.error(e);
         return { error: 'Failed to generate quiz. Please try again later.' };
+    }
+}
+
+export async function askDoubtAction(context: string, question: string): Promise<{ answer?: string; error?: string }> {
+    const contextValidation = contentSchema.safeParse(context);
+    if (!contextValidation.success) {
+        return { error: 'Context is too short to ask a question about.' };
+    }
+    const questionValidation = questionSchema.safeParse(question);
+    if (!questionValidation.success) {
+        return { error: questionValidation.error.flatten().formErrors[0] };
+    }
+
+    try {
+        const result = await askDoubt({ context, question });
+        return { answer: result.answer };
+    } catch (e) {
+        console.error(e);
+        return { error: 'Failed to get an answer. Please try again.' };
     }
 }

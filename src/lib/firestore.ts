@@ -20,7 +20,7 @@ import { auth } from './firebase';
 const MEMORIES_COLLECTION = 'memories';
 
 export interface AiGeneratedContent {
-    mnemonics: string[];
+    mnemonics: string;
     story: string;
     visualUrl: string;
 }
@@ -60,7 +60,7 @@ export async function saveMemory(memoryData: NewMemory, memoryId?: string): Prom
             ...memoryData,
             updatedAt: serverTimestamp() as Timestamp,
         };
-        await updateDoc(memoryRef, dataToUpdate);
+        await updateDoc(memoryRef, dataToUpdate as any); // Use any to bypass strict type checks on update
         return memoryId;
     } else {
         // Create new document
