@@ -44,7 +44,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 
-import { generateQuizAction, deleteMemoryAction } from '../actions';
+import { generateQuizAction } from '../actions';
 import { GenerateQuizOutput } from '@/ai/flows/generate-quiz';
 import QuizView from '@/components/quiz/quiz-view';
 import { useToast } from '@/hooks/use-toast';
@@ -103,18 +103,17 @@ export default function MemoryPage() {
 
   const handleDelete = async (memoryId: string) => {
     const result = await deleteMemoryAction(memoryId);
-
-    if (result.success) {
-      setHistory(prev => prev.filter(item => item.id !== memoryId));
-      toast({
-        title: 'Memory Deleted',
-        description: 'The memory session has been permanently deleted.',
-      });
-    } else {
+    if (result.error) {
       toast({
         variant: 'destructive',
         title: 'Deletion Failed',
-        description: result.error || 'Could not delete the memory session.',
+        description: result.error,
+      });
+    } else {
+      setHistory(prev => prev.filter(item => item.id !== memoryId));
+      toast({
+        title: 'Memory Deleted',
+        description: 'The memory session has been permanently removed.',
       });
     }
   }
