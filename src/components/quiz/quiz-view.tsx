@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -162,7 +163,8 @@ export default function QuizView({ quiz }: { quiz: Quiz }) {
           <>
             <CardTitle>Fill in the blank</CardTitle>
             <CardContent className="mt-4 space-y-4">
-              <p className="text-lg">{currentQuestion.data.sentence.split('_____')[0]}
+              <p className="text-lg flex flex-wrap items-center">
+                <span>{currentQuestion.data.sentence.split('_____')[0]}</span>
                 <Input
                     type="text"
                     value={userAnswers[currentQuestionIndex] || ''}
@@ -170,7 +172,7 @@ export default function QuizView({ quiz }: { quiz: Quiz }) {
                     className="inline-block w-48 mx-2"
                     placeholder="Your answer"
                 />
-                {currentQuestion.data.sentence.split('_____')[1]}
+                <span>{currentQuestion.data.sentence.split('_____')[1]}</span>
               </p>
             </CardContent>
           </>

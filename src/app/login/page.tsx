@@ -4,8 +4,8 @@ export default function LoginPage() {
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-background p-4">
       <header className="flex items-center gap-4 mb-8">
-        <img src="/logo.svg" alt="MemorEase Logo" className="h-12 w-12" />
-        <h1 className="text-4xl font-bold tracking-tighter">MemorEase</h1>
+        <img src="/logo.svg" alt="MemorEase Logo" className="h-10 w-10 md:h-12 md:w-12" />
+        <h1 className="text-3xl md:text-4xl font-bold tracking-tighter">MemorEase</h1>
       </header>
       <LoginForm />
     </div>

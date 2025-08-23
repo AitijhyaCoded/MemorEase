@@ -395,7 +395,7 @@ export default function Home() {
         <header className="absolute top-0 left-0 right-0 flex items-center justify-between p-4 border-b">
              <div className="flex items-center gap-3">
                 <img src="/logo.svg" alt="MemorEase Logo" className="h-8 w-8" />
-                <h1 className="text-2xl font-bold tracking-tight">MemorEase</h1>
+                <h1 className="text-xl md:text-2xl font-bold tracking-tight">MemorEase</h1>
             </div>
             <div className='flex items-center gap-2'>
                 <UserNav />
@@ -418,7 +418,7 @@ export default function Home() {
                     value={content}
                     onChange={e => setContent(e.target.value)}
                     placeholder="Paste text or a URL's content here... The more text, the better the AI assistance."
-                    className="min-h-[300px] text-base"
+                    className="min-h-[200px] md:min-h-[300px] text-base"
                   />
                 )}
                 <Button onClick={handleProcessContent} className="mt-4 w-full" size="lg" disabled={content.length < 50 || isLoadingMemory}>
@@ -473,33 +473,33 @@ export default function Home() {
 
 
       <div className="flex flex-col h-screen">
-        <header className="flex items-center justify-between p-4 border-b shrink-0">
-          <div className="flex items-center gap-3">
+        <header className="flex items-center justify-between p-2 md:p-4 border-b shrink-0">
+          <div className="flex items-center gap-2 md:gap-3">
             <img src="/logo.svg" alt="MemorEase Logo" className="h-8 w-8" />
-            <h1 className="text-2xl font-bold tracking-tight">MemorEase</h1>
+            <h1 className="text-xl md:text-2xl font-bold tracking-tight">MemorEase</h1>
           </div>
-          <div className='flex items-center gap-2'>
-              <Button onClick={handleOpenSaveDialog} variant="default" disabled={!user}>
-                <Save className="mr-2 h-4 w-4" /> Save
+          <div className='flex items-center gap-1 md:gap-2'>
+              <Button onClick={handleOpenSaveDialog} variant="default" size="sm" disabled={!user}>
+                <Save className="mr-0 md:mr-2 h-4 w-4" /><span className='hidden md:inline'>Save</span>
               </Button>
               <Link href="/memory" passHref>
-                <Button variant="outline"><History className="mr-2 h-4 w-4" /> My Memory</Button>
+                <Button variant="outline" size="sm"><History className="mr-0 md:mr-2 h-4 w-4" /><span className='hidden md:inline'>My Memory</span></Button>
               </Link>
-              <Button onClick={handleReset} variant="outline">
-                <Plus className="mr-2 h-4 w-4" /> New Session
+              <Button onClick={handleReset} variant="outline" size="sm">
+                <Plus className="mr-0 md:mr-2 h-4 w-4" /><span className='hidden md:inline'>New Session</span>
               </Button>
               <UserNav />
           </div>
         </header>
         <div className="grid md:grid-cols-3 flex-1 overflow-hidden">
-          <main className="md:col-span-2 flex flex-col p-4 md:p-6 overflow-hidden min-h-0">
+          <main className="md:col-span-2 flex flex-col p-2 md:p-6 overflow-hidden min-h-0">
             <Card className="flex-1 flex flex-col min-h-0">
-              <CardHeader className="flex flex-row items-center justify-between">
+              <CardHeader className="flex flex-row items-center justify-between p-4 md:p-6">
                 <div className="flex items-center gap-3">
                   <Text className="h-6 w-6 text-primary" />
                   <CardTitle>Your Content</CardTitle>
                 </div>
-                <div className="flex items-center gap-4 w-1/3">
+                <div className="flex items-center gap-2 md:gap-4 w-1/3">
                    <Minus className="h-4 w-4" />
                   <Slider
                     value={[fontSize]}
@@ -513,7 +513,7 @@ export default function Home() {
               </CardHeader>
               <CardContent className="flex-1 p-0 overflow-hidden min-h-0">
                 <ScrollArea className="h-full pr-4">
-                  <div className="pr-2 pl-8">
+                  <div className="pr-2 pl-4 md:pl-8">
                     <Highlighter
                       text={processedContent}
                       highlights={highlights}
@@ -526,13 +526,13 @@ export default function Home() {
               </CardContent>
             </Card>
           </main>
-          <aside className="md:col-span-1 p-4 md:p-6 border-l flex flex-col overflow-hidden">
+          <aside className="md:col-span-1 p-2 md:p-6 border-l flex flex-col overflow-hidden">
           <ScrollArea className="h-full">
             <Card className="w-full flex-1 flex flex-col">
-            <CardHeader>
+            <CardHeader className='p-4 md:p-6'>
                <CardTitle className="flex items-center gap-3"><Palette className="h-6 w-6 text-primary" />AI Toolkit</CardTitle>
             </CardHeader>
-            <CardContent className="flex-1 flex flex-col overflow-hidden">
+            <CardContent className="flex-1 flex flex-col overflow-hidden p-2 pt-0 md:p-6 md:pt-0">
               <Tabs defaultValue="summary" className="flex-1 flex flex-col overflow-hidden">
                 <TabsList className="grid w-full grid-cols-3">
                   <TabsTrigger value="summary">Summary</TabsTrigger>
@@ -581,11 +581,11 @@ export default function Home() {
                 <TabsContent value="more" className="flex-1 flex flex-col overflow-hidden">
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="outline" className="w-full mb-2 justify-between">
-                        More Tools <Plus className="ml-2 h-4 w-4" />
+                      <Button variant="outline" className="w-full mb-2 justify-between capitalize">
+                        {moreTab} <Plus className="ml-2 h-4 w-4" />
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent className="w-full">
+                    <DropdownMenuContent className="w-[calc(100vw-2.5rem)] md:w-[calc(33.33vw-4.5rem)]">
                       <DropdownMenuItem onClick={() => setMoreTab('visuals')}>Visuals</DropdownMenuItem>
                       <DropdownMenuItem onClick={() => setMoreTab('audio')}>Audio</DropdownMenuItem>
                       <DropdownMenuItem onClick={() => setMoreTab('mnemonics')}>Mnemonics</DropdownMenuItem>

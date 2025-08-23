@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
@@ -77,7 +78,7 @@ export default function ChatDialog({ open, onOpenChange, contextTitle, contextCo
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px] md:max-w-lg lg:max-w-2xl flex flex-col h-[80vh] max-h-[80vh]">
+      <DialogContent className="w-[90vw] md:max-w-lg lg:max-w-2xl flex flex-col h-[80vh] max-h-[80vh]">
         <DialogHeader>
           <DialogTitle>Ask a Doubt</DialogTitle>
           <DialogDescription>

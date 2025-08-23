@@ -92,14 +92,14 @@ export default function MemoryPage() {
   return (
     <>
       <Dialog open={isQuizDialogOpen} onOpenChange={setIsQuizDialogOpen}>
-        <DialogContent className="max-w-4xl h-[90vh]">
+        <DialogContent className="max-w-4xl h-[90vh] flex flex-col">
           <DialogHeader>
             <DialogTitle>Quiz: {quizTitle}</DialogTitle>
             <DialogDescription>
               Test your knowledge on this memory session.
             </DialogDescription>
           </DialogHeader>
-          <div className="h-full overflow-y-auto pr-6 -mr-6">
+          <div className="flex-1 h-full overflow-y-auto pr-6 -mr-6">
             {isQuizLoading ? (
               <div className="flex justify-center items-center h-full">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -124,11 +124,11 @@ export default function MemoryPage() {
         <header className="w-full flex items-center justify-between p-4 border-b shrink-0 fixed top-0 left-0 bg-background/80 backdrop-blur-sm z-10">
             <Link href="/" className="flex items-center gap-3">
             <img src="/logo.svg" alt="MemorEase Logo" className="h-8 w-8" />
-            <h1 className="text-2xl font-bold tracking-tight">MemorEase</h1>
+            <h1 className="text-xl md:text-2xl font-bold tracking-tight">MemorEase</h1>
             </Link>
             <div className='flex items-center gap-2'>
-                <Button onClick={handleNewSession} variant="outline">
-                  <Plus className="mr-2 h-4 w-4" /> New Session
+                <Button onClick={handleNewSession} variant="outline" size="sm">
+                  <Plus className="mr-0 md:mr-2 h-4 w-4" /> <span className='hidden md:inline'>New Session</span>
                 </Button>
                 <UserNav />
             </div>
@@ -213,11 +213,11 @@ export default function MemoryPage() {
                                 )}
                                 </>
                             )}
-                            <div className="flex gap-2 mt-4">
+                            <div className="flex flex-wrap gap-2 mt-4">
                                 <Link href={`/?id=${item.id}`} passHref>
-                                    <Button>Open in Editor</Button>
+                                    <Button size="sm">Open in Editor</Button>
                                 </Link>
-                                 <Button variant="outline" onClick={() => handleTakeQuiz(item)}>
+                                 <Button variant="outline" size="sm" onClick={() => handleTakeQuiz(item)}>
                                      <TestTubeDiagonal className="mr-2 h-4 w-4" />
                                      Take Quiz
                                 </Button>
