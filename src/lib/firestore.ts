@@ -131,16 +131,3 @@ export async function getMemoryHistory(): Promise<Memory[]> {
     const querySnapshot = await getDocs(q);
     return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Memory));
 }
-
-// Delete a memory
-export async function deleteMemory(memoryId: string, userId: string): Promise<void> {
-    const memoryRef = doc(db, MEMORIES_COLLECTION, memoryId);
-    const memorySnap = await getDoc(memoryRef);
-
-    if (!memorySnap.exists() || memorySnap.data().userId !== userId) {
-        throw new Error("Permission denied or memory not found.");
-    }
-
-    await deleteDoc(memoryRef);
-}
-

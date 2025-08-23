@@ -2,7 +2,7 @@
 'use client'
 
 import { useState, useEffect } from 'react';
-import { BrainCircuit, Clock, Loader2, FileText, Sparkles, Lightbulb, Link2, BookCopy, TestTubeDiagonal, Plus, Trash2, Notebook } from 'lucide-react';
+import { BrainCircuit, Clock, Loader2, FileText, Sparkles, Lightbulb, Link2, BookCopy, TestTubeDiagonal, Plus } from 'lucide-react';
 import {
   Card,
   CardContent,
@@ -32,19 +32,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
-
-import { generateQuizAction, deleteMemoryAction } from '../actions';
+import { generateQuizAction } from '../actions';
 import { GenerateQuizOutput } from '@/ai/flows/generate-quiz';
 import QuizView from '@/components/quiz/quiz-view';
 import { useToast } from '@/hooks/use-toast';
@@ -61,6 +49,10 @@ export default function MemoryPage() {
   const [quizTitle, setQuizTitle] = useState('');
   const { toast } = useToast();
   const router = useRouter();
+
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [memoryToDelete, setMemoryToDelete] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
 
   useEffect(() => {
@@ -101,27 +93,27 @@ export default function MemoryPage() {
     router.push('/');
   }
 
-  const handleDelete = async (memoryId: string) => {
-    const result = await deleteMemoryAction(memoryId);
-
-    if (result.success) {
-      setHistory(prev => prev.filter(item => item.id !== memoryId));
-      toast({
-        title: 'Memory Deleted',
-        description: 'The memory session has been permanently deleted.',
-      });
-    } else {
-      toast({
-        variant: 'destructive',
-        title: 'Deletion Failed',
-        description: result.error || 'Could not delete the memory session.',
-      });
-    }
-  }
-
-
   return (
     <>
+       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete this memory
+              session and all of its associated data.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteMemory} disabled={isDeleting}>
+              {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Continue
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <Dialog open={isQuizDialogOpen} onOpenChange={setIsQuizDialogOpen}>
         <DialogContent className="max-w-4xl h-[90vh] flex flex-col">
           <DialogHeader>
@@ -259,28 +251,6 @@ export default function MemoryPage() {
                                      <TestTubeDiagonal className="mr-2 h-4 w-4" />
                                      Take Quiz
                                 </Button>
-                                <AlertDialog>
-                                  <AlertDialogTrigger asChild>
-                                    <Button variant="destructive" size="sm">
-                                      <Trash2 className="mr-2 h-4 w-4" />
-                                      Delete
-                                    </Button>
-                                  </AlertDialogTrigger>
-                                  <AlertDialogContent>
-                                    <AlertDialogHeader>
-                                      <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                                      <AlertDialogDescription>
-                                        This action cannot be undone. This will permanently delete this memory session.
-                                      </AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                    <AlertDialogFooter>
-                                      <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                      <AlertDialogAction onClick={() => handleDelete(item.id)}>
-                                        Continue
-                                      </AlertDialogAction>
-                                    </AlertDialogFooter>
-                                  </AlertDialogContent>
-                                </AlertDialog>
                             </div>
                            </div>
                         </AccordionContent>

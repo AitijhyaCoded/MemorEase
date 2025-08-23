@@ -9,7 +9,7 @@ import { suggestMnemonics } from '@/ai/flows/suggest-mnemonics';
 import { createStory } from '@/ai/flows/create-story';
 import { createCheatSheet } from '@/ai/flows/create-cheatsheet';
 import { generateQuiz, GenerateQuizOutput } from '@/ai/flows/generate-quiz';
-import { saveCheatSheet } from '@/lib/firestore';
+import { saveCheatSheet, deleteMemory } from '@/lib/firestore';
 import { askDoubt } from '@/ai/flows/ask-doubt';
 import { z } from 'zod';
 import { deleteMemory } from '@/lib/firestore';
@@ -169,14 +169,3 @@ export async function askDoubtAction(context: string, question: string): Promise
         return { error: 'Failed to get an answer. Please try again.' };
     }
 }
-
-export async function deleteMemoryAction(memoryId: string, userId: string) {
-    try {
-      await deleteMemory(memoryId, userId);
-      return { success: true };  // ✅ always return an object
-    } catch (error) {
-      console.error("Delete error:", error);
-      return { success: false, error: (error as Error).message };
-    }
-}
-  
