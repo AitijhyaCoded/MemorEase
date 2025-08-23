@@ -132,17 +132,18 @@ export async function getMemoryHistory(): Promise<Memory[]> {
 }
 
 // Delete a memory by ID
-export async function deleteMemory(memoryId: string): Promise<void> {
+export async function deleteMemory(memoryId: string) {
     const user = auth.currentUser;
-    if (!user) throw new Error('User not logged in');
+    if (!user) throw new Error("Not logged in");
 
-    const memoryRef = doc(db, MEMORIES_COLLECTION, memoryId);
-    
-    // Optional: Verify the user owns this document before deleting
+    const memoryRef = doc(db, "memories", memoryId);
     const memorySnap = await getDoc(memoryRef);
+
     if (!memorySnap.exists() || memorySnap.data().userId !== user.uid) {
         throw new Error("Permission denied or memory not found.");
     }
 
     await deleteDoc(memoryRef);
 }
+
+  

@@ -88,11 +88,11 @@ export default function MemoryPage() {
     setIsDeleting(true);
     const result = await deleteMemoryAction(memoryToDelete);
 
-    if (result.error) {
+    if (!result || result.error) { // ✅ add check for undefined
         toast({
             variant: 'destructive',
             title: 'Deletion Failed',
-            description: result.error,
+            description: result?.error || 'Unknown error occurred.',
         });
     } else {
         setHistory(prev => prev.filter(item => item.id !== memoryToDelete));
@@ -106,6 +106,7 @@ export default function MemoryPage() {
     setIsDeleteDialogOpen(false);
     setMemoryToDelete(null);
   };
+
 
 
   const handleTakeQuiz = async (memory: Memory) => {

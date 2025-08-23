@@ -172,10 +172,12 @@ export async function askDoubtAction(context: string, question: string): Promise
 
 export async function deleteMemoryAction(memoryId: string): Promise<{ success?: boolean; error?: string }> {
     try {
-        await deleteMemory(memoryId);
+        await deleteMemory(memoryId); // Option 2: deleteMemory uses auth.currentUser internally
         return { success: true };
     } catch (error: any) {
         console.error("Failed to delete memory:", error);
-        return { error: error.message || 'An unknown error occurred while deleting the memory.' };
+        return { error: error?.message || 'An unknown error occurred while deleting the memory.' };
     }
 }
+
+  
