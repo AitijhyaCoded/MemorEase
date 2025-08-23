@@ -343,15 +343,18 @@ export default function Home() {
   
   if (!processedContent) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-background p-4">
-        <header className="absolute top-4 right-4">
-            <UserNav />
-        </header>
-        <div className='flex flex-col items-center justify-center'>
-            <div className="flex items-center gap-4 mb-8">
-              <img src="/logo.svg" alt="MemorEase Logo" className="h-12 w-12" />
-              <h1 className="text-4xl font-bold tracking-tighter">MemorEase</h1>
+      <div className="flex flex-col items-center justify-center min-h-screen bg-background p-4 relative">
+        <header className="absolute top-0 left-0 right-0 flex items-center justify-between p-4 border-b">
+             <div className="flex items-center gap-3">
+                <img src="/logo.svg" alt="MemorEase Logo" className="h-8 w-8" />
+                <h1 className="text-2xl font-bold tracking-tight">MemorEase</h1>
             </div>
+            <div className='flex items-center gap-2'>
+                <UserNav />
+            </div>
+        </header>
+
+        <main className='flex flex-col items-center justify-center w-full'>
             <Card className="w-full max-w-3xl shadow-2xl animate-in fade-in-50 zoom-in-95 duration-500">
               <CardHeader>
                 <CardTitle className="text-2xl">Start Memorizing</CardTitle>
@@ -376,7 +379,7 @@ export default function Home() {
                 </Button>
               </CardContent>
             </Card>
-        </div>
+        </main>
       </div>
     );
   }
