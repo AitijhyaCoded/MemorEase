@@ -535,8 +535,8 @@ export default function Home() {
             <CardContent className="flex-1 flex flex-col overflow-hidden">
               <Tabs defaultValue="summary" className="flex-1 flex flex-col overflow-hidden">
                 <TabsList className="grid w-full grid-cols-3">
-                  <TabsTrigger value="summary"><FileText className="mr-2 h-4 w-4" />Summary</TabsTrigger>
-                  <TabsTrigger value="highlights"><Sparkles className="mr-2 h-4 w-4" />Highlights</TabsTrigger>
+                  <TabsTrigger value="summary">Summary</TabsTrigger>
+                  <TabsTrigger value="highlights">Highlights</TabsTrigger>
                   <TabsTrigger value="more"><Plus className="mr-2 h-4 w-4" />More</TabsTrigger>
                 </TabsList>
                 <TabsContent value="summary" className="flex-1 flex flex-col overflow-hidden">
