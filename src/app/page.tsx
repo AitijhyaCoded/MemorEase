@@ -3,7 +3,7 @@
 
 import { useState, useTransition, useMemo, useCallback, useEffect, useRef } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { BrainCircuit, FileText, Sparkles, Bookmark, Text, Palette, Plus, Minus, X, Loader2, Image as ImageIcon, Volume2, Lightbulb, Link2, Save, BookCopy, History, MessageCircleQuestion } from 'lucide-react';
+import { BrainCircuit, FileText, Sparkles, Bookmark, Text, Palette, Plus, Minus, X, Loader2, Image as ImageIcon, Volume2, Lightbulb, Link2, Save, BookCopy, History, MessageCircleQuestion, Notebook } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
@@ -32,7 +32,6 @@ import { Label } from "@/components/ui/label";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import Link from 'next/link';
 import ChatDialog from '@/components/chat/chat-dialog';
-import NotesSection from '@/components/notes/notes-section';
 
 
 // --- helpers to make any context safe for chat ---
@@ -130,6 +129,7 @@ export default function Home() {
   const [mnemonics, setMnemonics] = useState('');
   const [story, setStory] = useState('');
   const [cheatSheet, setCheatSheet] = useState('');
+  const [notes, setNotes] = useState('');
   
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [chatContext, setChatContext] = useState<{ title: string; content: string } | null>(null);
@@ -162,6 +162,7 @@ export default function Home() {
             setSummary(memory.summary || '');
             setHighlights(memory.highlights || []);
             setCheatSheet(memory.cheatSheetHtml || '');
+            setNotes(memory.notes || '');
             if (memory.aiGenerated) {
                 setMnemonics(memory.aiGenerated.mnemonics || '');
                 setStory(memory.aiGenerated.story || '');
@@ -202,6 +203,7 @@ export default function Home() {
     setStory('');
     setCheatSheet('');
     setSaveTitle('');
+    setNotes('');
     toast({ title: 'New Session Started', description: 'Your previous work has been cleared.' });
   };
   
@@ -239,6 +241,7 @@ export default function Home() {
             highlights,
             aiGenerated,
             cheatSheetHtml: cheatSheet,
+            notes,
         };
 
         const newMemoryId = await saveMemory(memoryData, memoryId || undefined);
@@ -666,7 +669,7 @@ export default function Home() {
                           </div>
                           <ScrollArea className="mt-4 flex-1 pr-2">
                             {isMnemonicsLoading && <div className="space-y-2"><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-full" /></div>}
-                            {mnemonics && <p className="text-sm leading-relaxed whitespace-pre-wrap">{mnemonics}</p>}
+                            {mnemonics && <div className="prose prose-sm dark:prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: mnemonics }} />}
                             {!mnemonics && !isMnemonicsLoading && <p className="text-sm text-center text-muted-foreground mt-8">Generate mnemonic devices.</p>}
                           </ScrollArea>
                         </>
@@ -698,7 +701,7 @@ export default function Home() {
                           <div className='flex gap-2 w-full mt-2'>
                             <Button onClick={handleCreateCheatSheet} disabled={isCheatSheetLoading || !!cheatSheet} className="w-full">
                               {isCheatSheetLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                              {cheatSheet ? 'Cheet Sheat Generated' : 'Generate Cheat Sheet'}
+                              {cheatSheet ? 'Cheat Sheet Generated' : 'Generate Cheat Sheet'}
                             </Button>
                             {cheatSheet && (
                               <>
@@ -720,7 +723,21 @@ export default function Home() {
                 </Tabs>
               </CardContent>
             </Card>
-            <NotesSection />
+            <Card className="w-full mt-4">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-3"><Notebook className="h-6 w-6 text-primary" />My Notes</CardTitle>
+              </CardHeader>
+              <CardContent>
+                 <Textarea
+                    placeholder="Type your personal notes for this session here..."
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    rows={5}
+                    className="w-full"
+                  />
+                  <p className="text-xs text-muted-foreground mt-2">Your notes will be saved automatically when you save the memory session.</p>
+              </CardContent>
+            </Card>
           </ScrollArea>
           </aside>
         </div>
