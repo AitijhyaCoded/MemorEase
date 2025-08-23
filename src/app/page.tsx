@@ -394,7 +394,7 @@ export default function Home() {
       <div className="flex flex-col items-center justify-center min-h-screen bg-background p-4 relative">
         <header className="absolute top-0 left-0 right-0 flex items-center justify-between p-4 border-b">
              <div className="flex items-center gap-3">
-                <img src="/logo.svg" alt="MemorEase Logo" className="h-8 w-8" />
+                <BrainCircuit className="h-8 w-8" />
                 <h1 className="text-xl md:text-2xl font-bold tracking-tight">MemorEase</h1>
             </div>
             <div className='flex items-center gap-2'>
