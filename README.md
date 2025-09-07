@@ -18,7 +18,7 @@ MemorEase is an AI-powered study assistant built with Next.js and Firebase. It h
 
 ### 1. Clone the Repository
 ```sh
-git clone https://github.com/AitijhyaCoded/studio.git
+git clone https://github.com/AitijhyaCoded/MemorEase.git
 cd studio
 ```
 
